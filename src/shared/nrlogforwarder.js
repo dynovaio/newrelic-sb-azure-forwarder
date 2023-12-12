@@ -313,14 +313,20 @@ function transformData (logs, context) {
 
             if (properties !== undefined) {
                 if (typeof properties === 'object' && properties !== null) {
-                    buffer.push({
+                    let structuredLog = {
                         [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
                         [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
-                    })
+                    };
+
+                    if (meta.time !== undefined) {
+                        structuredLog.timestamp = new Date(meta.time).getTime();
+                    }
+
+                    buffer.push(structuredLog);
                 }
             }
             else {
-                buffer.push({ message: log })
+                buffer.push({ message: log });
             }
         });
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
@@ -499,10 +505,6 @@ function wait (delay) {
 }
 
 const NewRelicLogForwarder = async (blob, context) => {
-    context.log("NewRelicLogForwarder::blob   : ", JSON.stringify(blob));
-    console.log("NewRelicLogForwarder::context: ", JSON.stringify(context));
-    console.log("NewRelicLogForwarder::trigger: ", JSON.stringify(context.triggerMetadata));
-
     context.log(`Storage blob function processed blob "${context.triggerMetadata.blobTrigger}" with size ${blob.length} bytes`);
 
     if (!NR_LICENSE_KEY) {
