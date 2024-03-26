@@ -48,6 +48,7 @@ const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT;
 
 const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
 
+
 /**
  * Compresses the input data using gzip compression algorithm.
  *
@@ -552,6 +553,18 @@ const NewRelicLogForwarder = async (blob, context) => {
     }
 }
 
+const checkData = async (messages, context) => {
+    if (Array.isArray(messages)) {
+        context.log(`Event hub function processed ${messages.length} messages`);
+        for (const message of messages) {
+            context.log('Event hub message:', message);
+        }
+    } else {
+        context.log('Event hub function processed message:', messages);
+    }
+}
+
 module.exports = {
-    NewRelicLogForwarder
+    NewRelicLogForwarder,
+    checkData
 }

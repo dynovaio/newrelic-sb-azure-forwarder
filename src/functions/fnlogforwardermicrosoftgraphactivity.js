@@ -8,14 +8,17 @@
  */
 'use strict';
 
+
 /**
  * Log Forwarder Application
  */
-const { NewRelicLogForwarder } = require('../shared/nrlogforwarder');
+const { checkData } = require('../shared/nrlogforwarder');
 const { app } = require('@azure/functions');
 
-app.storageBlob('fnlogforwardermicrosoftgraphactivity', {
-    path: 'insights-logs-microsoftgraphactivitylogs/{name}',
-    connection: 'NR_BLOB_STORAGE_TRIGGER_CONNECTION_STRING',
-    handler: async (blob, context) => await NewRelicLogForwarder(blob, context)
+
+app.eventHub('fnlogforwardermicrosoftgraphactivity', {
+    connection: 'NR_TRIGGER_CONNECTION_STRING',
+    eventHubName: 'insights-logs-microsoftgraphactivitylogs',
+    cardinality: 'many',
+    handler: async (blob, context) => await checkData(blob, context)
 });
