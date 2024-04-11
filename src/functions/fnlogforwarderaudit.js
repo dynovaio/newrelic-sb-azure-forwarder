@@ -11,7 +11,7 @@
 /**
  * Log Forwarder Application
  */
-const { checkData } = require('../shared/nrlogforwarder');
+const { NewRelicLogForwarder } = require('../shared/nrlogforwarder');
 const { app } = require('@azure/functions');
 
 
@@ -19,5 +19,5 @@ app.eventHub('fnlogforwarderaudit', {
     connection: 'NR_TRIGGER_CONNECTION_STRING',
     eventHubName: 'insights-logs-auditlogs',
     cardinality: 'many',
-    handler: async (blob, context) => await checkData(blob, context)
+    handler: async (messages, context) => await NewRelicLogForwarder(messages, context)
 });

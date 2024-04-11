@@ -505,63 +505,56 @@ function wait (delay) {
     });
 }
 
-const NewRelicLogForwarder = async (blob, context) => {
-    context.log(`Storage blob function processed blob "${context.triggerMetadata.blobTrigger}" with size ${blob.length} bytes`);
+const NewRelicLogForwarder = async (eventHubMessages, context) => {
+    context.log(`Storage blob function processed blob "${context.triggerMetadata.blobTrigger}" with size ${eventHubMessages.length} messages`);
 
-    if (!NR_LICENSE_KEY) {
-        context.error(
-            'You have to configure either your LICENSE key or insights insert key. ' +
+    if (!NR_LICENSE_KEY && !NR_INSERT_KEY) {
+        context.log.error(
+            'You have to configure either your LICENSE key or insights INSERT key. ' +
             'Please follow the instructions in README'
         );
         return;
     }
 
-    let logs;
-    if (typeof blob === 'string') {
-        logs = blob.trim().split('\n');
-    } else if (Buffer.isBuffer(blob)) {
-        logs = blob.toString('utf8').trim().split('\n');
-    } else {
-        logs = JSON.stringify(blob).trim().split('\n');
-    }
-
-    let buffer = transformData(logs, context);
+    let buffer = transformData(eventHubMessages, context);
     if (buffer.length === 0) {
-        context.warn('logs format is invalid');
+        context.log.warn('logs format is invalid');
         return;
     }
 
     let compressedPayload;
     let payloads = generatePayloads(buffer, context);
+
     for (const payload of payloads) {
         try {
             compressedPayload = await compressData(JSON.stringify(payload));
             try {
-                await retryMax(httpSend, NR_MAX_RETRIES, NR_RETRY_INTERVAL, [
-                    compressedPayload,
-                    context,
-                ]);
-                context.log('Logs payload successfully sent to New Relic.');
+                await retryMax(
+                    httpSend,
+                    NR_MAX_RETRIES,
+                    NR_RETRY_INTERVAL,
+                    [
+                        compressedPayload,
+                        context,
+                    ]
+                );
+                context.log('Logs payload successfully sent to New Relic');
             } catch (e) {
-                context.error('Max retries reached: failed to send logs payload to New Relic');
-                context.error('Exception: ', JSON.stringify(e));
+                context.log.error(
+                    'Max retries reached: failed to send logs payload to New Relic'
+                );
+                context.log.error('Exception: ', JSON.stringify(e));
             }
         } catch (e) {
-            context.error('Error during payload compression.');
-            context.error('Exception: ', JSON.stringify(e));
+            context.log.error('Error during payload compression');
+            context.log.error('Exception: ', JSON.stringify(e));
         }
     }
 }
 
 const checkData = async (messages, context) => {
-    if (Array.isArray(messages)) {
-        context.log(`Event hub function processed ${messages.length} messages`);
-        for (const message of messages) {
-            context.log('Event hub message:', message);
-        }
-    } else {
-        context.log('Event hub function processed message:', messages);
-    }
+    context.log(`Event hub function processed ${messages.length} messages`);
+    context.log('Event hub function processed message:', JSON.stringify(messages));
 }
 
 module.exports = {
