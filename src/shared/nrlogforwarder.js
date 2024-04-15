@@ -303,10 +303,31 @@ function transformData (logs, context) {
             context.log('Type of logs: records Array');
             // Extract records from each message and push them into the buffer.
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => buffer.push(log));
+                message.records.forEach((log) => {
+                    const { properties, ...meta } = log;
+
+                    if (properties !== undefined) {
+                        if (typeof properties === 'object' && properties !== null) {
+                            let structuredLog = {
+                                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
+                                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
+                            };
+
+                            if (meta.time !== undefined) {
+                                structuredLog.timestamp = new Date(meta.time).getTime();
+                            }
+
+                            buffer.push(structuredLog);
+                        }
+                    }
+                    else {
+                        buffer.push(log)
+                    }
+                });
             });
             return buffer;
         } // type JSON array
+
         context.log('Type of logs: JSON Array');
         // Convert each array element to an object with a 'message' property and push it into the buffer.
         parsedLogs.forEach((log) => {
@@ -505,8 +526,8 @@ function wait (delay) {
     });
 }
 
-const NewRelicLogForwarder = async (eventHubMessages, context) => {
-    context.log(`Storage blob function processed blob "${context.triggerMetadata.blobTrigger}" with size ${eventHubMessages.length} messages`);
+const NewRelicLogForwarder = async (messages, context) => {
+    context.log(`Event hub function processed ${messages.length} messages from "${context.triggerMetadata.partitionContext.eventHubName}" `);
 
     if (!NR_LICENSE_KEY && !NR_INSERT_KEY) {
         context.log.error(
@@ -516,7 +537,7 @@ const NewRelicLogForwarder = async (eventHubMessages, context) => {
         return;
     }
 
-    let buffer = transformData(eventHubMessages, context);
+    let buffer = transformData(messages, context);
     if (buffer.length === 0) {
         context.log.warn('logs format is invalid');
         return;
@@ -552,12 +573,6 @@ const NewRelicLogForwarder = async (eventHubMessages, context) => {
     }
 }
 
-const checkData = async (messages, context) => {
-    context.log(`Event hub function processed ${messages.length} messages`);
-    context.log('Event hub function processed message:', JSON.stringify(messages));
-}
-
 module.exports = {
     NewRelicLogForwarder,
-    checkData
 }
