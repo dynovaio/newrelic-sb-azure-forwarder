@@ -1,5 +1,5 @@
 {
-  "name": "logforwarder-azureb2c-afn",
+  "name": "logforwarder-azureapim-afn",
   "version": "1.0.0",
   "description": "",
   "scripts": {

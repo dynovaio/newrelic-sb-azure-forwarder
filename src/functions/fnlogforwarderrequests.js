@@ -8,6 +8,7 @@
  */
 'use strict';
 
+
 /**
  * Log Forwarder Application
  */
@@ -15,9 +16,9 @@ const { NewRelicLogForwarder } = require('../shared/nrlogforwarder');
 const { app } = require('@azure/functions');
 
 
-app.eventHub('fnlogforwarderaudit', {
+app.eventHub('fnlogforwarderrequests', {
     connection: 'NR_TRIGGER_CONNECTION_STRING',
-    eventHubName: 'insights-logs-auditlogs',
+    eventHubName: 'newrelic-logs-requests',
     cardinality: 'many',
     handler: async (messages, context) => await NewRelicLogForwarder(messages, context)
 });
