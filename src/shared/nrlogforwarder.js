@@ -317,6 +317,10 @@ function transformData (logs, context) {
                                 structuredLog.timestamp = new Date(meta.time).getTime();
                             }
 
+                            if (meta.serviceName !== undefined) {
+                                structuredLog.serviceName = meta.serviceName;
+                            }
+
                             buffer.push(structuredLog);
                         }
                     }
@@ -342,6 +346,10 @@ function transformData (logs, context) {
 
                     if (meta.time !== undefined) {
                         structuredLog.timestamp = new Date(meta.time).getTime();
+                    }
+
+                    if (meta.serviceName !== undefined) {
+                        structuredLog.serviceName = meta.serviceName;
                     }
 
                     buffer.push(structuredLog);
