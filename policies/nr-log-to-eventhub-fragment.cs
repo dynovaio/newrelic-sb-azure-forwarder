@@ -1,6 +1,7 @@
 var epoch = new DateTime(1970, 1, 1);
 
 var LogRecord = new JObject(
+    new JProperty("kind", context.Variables.GetValueOrDefault("nrLogKind", null)),
     new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds + context.Elapsed.TotalMilliseconds),
     new JProperty("timestamp", context.Timestamp),
     new JProperty("timespan", context.Elapsed.TotalMilliseconds),
@@ -122,7 +123,7 @@ var RequestProperties = new JObject(
 
 if (context.Request.Body != null) {
     RequestProperties.Add(
-        new JProperty("body", context.Request.Body.As<string>(preserveContent: true))
+        new JProperty("body", "RequestBody::" + context.Request.Body.As<string>(preserveContent: true))
     );
 }
 
@@ -136,7 +137,7 @@ if (context.Request.Headers != null) {
     }
 
     RequestProperties.Add(
-        new JProperty("headers", RequestHeadersProperties)
+        new JProperty("headers", "RequestHeaders::" + RequestHeadersProperties.ToString())
     );
 }
 
@@ -182,7 +183,7 @@ if (context.Response != null) {
 
     if (context.Response.Body != null) {
         ResponseProperties.Add(
-            new JProperty("body", context.Response.Body.As<string>(preserveContent: true))
+            new JProperty("body", "ResponseBody::" + context.Response.Body.As<string>(preserveContent: true))
         );
     }
 
@@ -196,7 +197,7 @@ if (context.Response != null) {
         }
 
         ResponseProperties.Add(
-            new JProperty("headers", ResponseHeadersProperties)
+            new JProperty("headers", "ResponseHeaders::" + ResponseHeadersProperties)
         );
     }
 
@@ -224,19 +225,5 @@ if (context.LastError != null) {
 LogRecord.Add(
     new JProperty("properties", LogRecordProperties)
 );
-
-if (context.LastError != null) {
-    LogRecord.Add(
-        new JProperty("kind", "error")
-    );
-} else if (context.Response != null) {
-    LogRecord.Add(
-        new JProperty("kind", "response")
-    );
-} else {
-    LogRecord.Add(
-        new JProperty("kind", "request")
-    );
-}
 
 return LogRecord.ToString();

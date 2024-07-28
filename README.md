@@ -21,6 +21,7 @@ In order to run locally or deploy the samples in this repository, you will need 
 * nvm ([↗][href:nvm])
 * Azure Functions Core Tools ([↗][href:azfct])
 * Azure CLI ([↗][href:azcli])
+* Azure Bicep ([↗][href:azbicep])
 * New Relic account ([↗][href:newrelic])
 * Visual Studio Code ([VSCode ↗][href:vscode]) with the Azure Functions
 extension
@@ -140,19 +141,22 @@ To use this project, you will need to follow these steps:
 
 Sugestions and contributions are welcome!
 
-> Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+> Please note that this project is released with a Contributor Code of Conduct.
+> By participating in this project you agree to abide by its terms.
 
-For more information, please refer to the [Code of Conduct ↗][href:code_of_conduct].
+For more information, please refer to the
+[Code of Conduct ↗][href:code_of_conduct].
 
 ## License
 
-This project is licensed under the terms of the [BSD-3-Clause
-↗][href:license] license.
+This project is licensed under the terms of the
+[BSD-3-Clause ↗][href:license] license.
 
 [href:nrlogforwarder]: https://github.com/newrelic/newrelic-azure-functions/tree/master
 [href:nvm]: https://github.com/nvm-sh/nvm
 [href:azfct]: https://github.com/Azure/azure-functions-core-tools
 [href:azcli]: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+[href:azbicep]: https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/install#azure-cli
 [href:newrelic]: https://newrelic.com/signup
 [href:requirements]: REQUIREMENTS.md
 [href:license]: LICENSE.txt

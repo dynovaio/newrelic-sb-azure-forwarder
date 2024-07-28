@@ -6,7 +6,8 @@
 -->
 <fragment>
     <log-to-eventhub logger-id="nr-logger"> @{ var epoch = new DateTime(1970, 1, 1); var LogRecord =
-        new JObject( new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds +
+        new JObject( new JProperty("kind", context.Variables.GetValueOrDefault("nrLogKind", null)),
+        new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds +
         context.Elapsed.TotalMilliseconds), new JProperty("timestamp", context.Timestamp), new
         JProperty("timespan", context.Elapsed.TotalMilliseconds), new JProperty("requestId",
         context.RequestId), new JProperty("serviceName", context.Deployment.ServiceId) ); var
@@ -48,30 +49,31 @@
         new JObject( new JProperty("id", context.RequestId), new JProperty("ip",
         context.Request.IpAddress), new JProperty("method", context.Request.Method) ); if
         (context.Request.Body != null) { RequestProperties.Add( new JProperty("body",
-        context.Request.Body.As<string>(preserveContent: true)) ); } if (context.Request.Headers !=
-        null) { var RequestHeadersProperties = new JObject(); foreach (var header in
-        context.Request.Headers) { RequestHeadersProperties.Add( new JProperty(header.Key,
-        header.Value) ); } RequestProperties.Add( new JProperty("headers", RequestHeadersProperties)
-        ); } if (context.Request.Url != null) { var RequestUrlProperties = new JObject( new
-        JProperty("host", context.Request.Url.Host), new JProperty("path",
-        context.Request.Url.Path), new JProperty("port", context.Request.Url.Port), new
-        JProperty("queryString", context.Request.Url.QueryString), new JProperty("scheme",
-        context.Request.Url.Scheme) ); RequestProperties.Add( new JProperty("url",
-        RequestUrlProperties) ); } if (context.Request.OriginalUrl != null) { var
-        RequestOriginalUrlProperties = new JObject( new JProperty("host",
-        context.Request.OriginalUrl.Host), new JProperty("path", context.Request.OriginalUrl.Path),
-        new JProperty("port", context.Request.OriginalUrl.Port), new JProperty("queryString",
-        context.Request.OriginalUrl.QueryString), new JProperty("scheme",
-        context.Request.OriginalUrl.Scheme) ); RequestProperties.Add( new JProperty("originalUrl",
-        RequestOriginalUrlProperties) ); } LogRecordProperties.Add( new JProperty("request",
-        RequestProperties) ); if (context.Response != null) { var ResponseProperties = new JObject(
-        new JProperty("status", new JObject( new JProperty("code", context.Response.StatusCode), new
-        JProperty("reason", context.Response.StatusReason) )) ); if (context.Response.Body != null)
-        { ResponseProperties.Add( new JProperty("body", context.Response.Body.As<string>(preserveContent:
-        true)) ); } if (context.Response.Headers != null) { var ResponseHeadersProperties = new
-        JObject(); foreach (var header in context.Response.Headers) { ResponseHeadersProperties.Add(
-        new JProperty(header.Key, header.Value) ); } ResponseProperties.Add( new
-        JProperty("headers", ResponseHeadersProperties) ); } LogRecordProperties.Add( new
+        "RequestBody::" + context.Request.Body.As<string>(preserveContent: true)) ); } if
+        (context.Request.Headers != null) { var RequestHeadersProperties = new JObject(); foreach
+        (var header in context.Request.Headers) { RequestHeadersProperties.Add( new
+        JProperty(header.Key, header.Value) ); } RequestProperties.Add( new JProperty("headers",
+        "RequestHeaders::" + RequestHeadersProperties.ToString()) ); } if (context.Request.Url !=
+        null) { var RequestUrlProperties = new JObject( new JProperty("host",
+        context.Request.Url.Host), new JProperty("path", context.Request.Url.Path), new
+        JProperty("port", context.Request.Url.Port), new JProperty("queryString",
+        context.Request.Url.QueryString), new JProperty("scheme", context.Request.Url.Scheme) );
+        RequestProperties.Add( new JProperty("url", RequestUrlProperties) ); } if
+        (context.Request.OriginalUrl != null) { var RequestOriginalUrlProperties = new JObject( new
+        JProperty("host", context.Request.OriginalUrl.Host), new JProperty("path",
+        context.Request.OriginalUrl.Path), new JProperty("port", context.Request.OriginalUrl.Port),
+        new JProperty("queryString", context.Request.OriginalUrl.QueryString), new
+        JProperty("scheme", context.Request.OriginalUrl.Scheme) ); RequestProperties.Add( new
+        JProperty("originalUrl", RequestOriginalUrlProperties) ); } LogRecordProperties.Add( new
+        JProperty("request", RequestProperties) ); if (context.Response != null) { var
+        ResponseProperties = new JObject( new JProperty("status", new JObject( new JProperty("code",
+        context.Response.StatusCode), new JProperty("reason", context.Response.StatusReason) )) );
+        if (context.Response.Body != null) { ResponseProperties.Add( new JProperty("body",
+        "ResponseBody::" + context.Response.Body.As<string>(preserveContent: true)) ); } if
+        (context.Response.Headers != null) { var ResponseHeadersProperties = new JObject(); foreach
+        (var header in context.Response.Headers) { ResponseHeadersProperties.Add( new
+        JProperty(header.Key, header.Value) ); } ResponseProperties.Add( new JProperty("headers",
+        "ResponseHeaders::" + ResponseHeadersProperties) ); } LogRecordProperties.Add( new
         JProperty("response", ResponseProperties) ); } if (context.LastError != null) { var
         ErrorProperties = new JObject( new JProperty("lastError.source", context.LastError.Source),
         new JProperty("lastError.reason", context.LastError.Reason), new
@@ -79,8 +81,6 @@
         context.LastError.Scope), new JProperty("lastError.section", context.LastError.Section), new
         JProperty("lastError.path", context.LastError.Path), new JProperty("lastError.policyId",
         context.LastError.PolicyId) ); LogRecordProperties.Add( new JProperty("error",
-        ErrorProperties) ); } LogRecord.Add( new JProperty("properties", LogRecordProperties) ); if
-        (context.LastError != null) { LogRecord.Add( new JProperty("kind", "error") ); } else if
-        (context.Response != null) { LogRecord.Add( new JProperty("kind", "response") ); } else {
-        LogRecord.Add( new JProperty("kind", "request") ); } return LogRecord.ToString(); } </log-to-eventhub>
+        ErrorProperties) ); } LogRecord.Add( new JProperty("properties", LogRecordProperties) );
+        return LogRecord.ToString(); } </log-to-eventhub>
 </fragment>
