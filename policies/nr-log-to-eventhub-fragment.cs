@@ -123,7 +123,7 @@ var RequestProperties = new JObject(
 
 if (context.Request.Body != null) {
     RequestProperties.Add(
-        new JProperty("body", "RequestBody::" + context.Request.Body.As<string>(preserveContent: true))
+        new JProperty("body", context.Request.Body.As<string>(preserveContent: true))
     );
 }
 
@@ -137,7 +137,7 @@ if (context.Request.Headers != null) {
     }
 
     RequestProperties.Add(
-        new JProperty("headers", "RequestHeaders::" + RequestHeadersProperties.ToString())
+        new JProperty("headers", RequestHeadersProperties.ToString())
     );
 }
 
@@ -183,7 +183,7 @@ if (context.Response != null) {
 
     if (context.Response.Body != null) {
         ResponseProperties.Add(
-            new JProperty("body", "ResponseBody::" + context.Response.Body.As<string>(preserveContent: true))
+            new JProperty("body", context.Response.Body.As<string>(preserveContent: true))
         );
     }
 
@@ -197,7 +197,7 @@ if (context.Response != null) {
         }
 
         ResponseProperties.Add(
-            new JProperty("headers", "ResponseHeaders::" + ResponseHeadersProperties)
+            new JProperty("headers", ResponseHeadersProperties.ToString())
         );
     }
 

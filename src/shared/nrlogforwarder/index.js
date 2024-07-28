@@ -248,6 +248,70 @@ function addMetadata (logEntry) {
     return logEntry;
 }
 
+/**
+ * Process logs for API Management
+ */
+function processApimLog (log, context) {
+    const { properties, ...meta } = log;
+
+    if (properties !== undefined) {
+        if (typeof properties === 'object' && properties !== null) {
+            console.log(properties)
+            if (properties.request?.body !== undefined) {
+                try {
+                    const requestBody = JSON.stringify(JSON.parse(properties.request.body));
+                    properties.request.body = "RequestBody::" + requestBody;
+                } catch (error) {
+                    context.warn("Can't process request body.");
+                }
+            }
+
+            if (properties.request?.headers !== undefined) {
+                try {
+                    const requestBeaders = JSON.stringify(JSON.parse(properties.request.headers));
+                    properties.request.headers = "RequestHeaders::" + requestBeaders;
+                } catch (error) {
+                    context.warn("Can't process request headers.");
+                }
+            }
+            if (properties.response?.body !== undefined) {
+                try {
+                    const responseBody = JSON.stringify(JSON.parse(properties.response.body));
+                    properties.response.body = "ResponseBody::" + responseBody;
+                } catch (error) {
+                    context.warn("Can't process response body.");
+                }
+            }
+
+            if (properties.response?.headers !== undefined) {
+                try {
+                    const responseBeaders = JSON.stringify(JSON.parse(properties.response.headers));
+                    properties.response.headers = "ResponseHeaders::" + responseBeaders;
+                } catch (error) {
+                    context.warn("Can't process response headers.");
+                }
+            }
+
+            let structuredLog = {
+                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
+                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
+            };
+
+            if (meta.time !== undefined) {
+                structuredLog.timestamp = new Date(meta.time).getTime();
+            }
+
+            if (meta.serviceName !== undefined) {
+                structuredLog.serviceName = meta.serviceName;
+            }
+
+            return structuredLog
+        }
+    }
+
+    return log
+}
+
 
 /**
  * Transforms the input logs into a consistent format suitable for processing.
@@ -303,62 +367,15 @@ function transformData (logs, context) {
             context.log('Type of logs: records Array');
             // Extract records from each message and push them into the buffer.
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => {
-                    const { properties, ...meta } = log;
-
-                    if (properties !== undefined) {
-                        if (typeof properties === 'object' && properties !== null) {
-                            let structuredLog = {
-                                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
-                            };
-
-                            if (meta.time !== undefined) {
-                                structuredLog.timestamp = new Date(meta.time).getTime();
-                            }
-
-                            if (meta.serviceName !== undefined) {
-                                structuredLog.serviceName = meta.serviceName;
-                            }
-
-                            buffer.push(structuredLog);
-                        }
-                    }
-                    else {
-                        buffer.push(log)
-                    }
-                });
+                message.records.forEach((log) => buffer.push(processApimLog(log, context)));
             });
             return buffer;
         } // type JSON array
 
         context.log('Type of logs: JSON Array');
         // Convert each array element to an object with a 'message' property and push it into the buffer.
-        parsedLogs.forEach((log) => {
-            const { properties, ...meta } = log;
+        parsedLogs.forEach((log) => buffer.push(processApimLog(log, context)));
 
-            if (properties !== undefined) {
-                if (typeof properties === 'object' && properties !== null) {
-                    let structuredLog = {
-                        [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                        [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
-                    };
-
-                    if (meta.time !== undefined) {
-                        structuredLog.timestamp = new Date(meta.time).getTime();
-                    }
-
-                    if (meta.serviceName !== undefined) {
-                        structuredLog.serviceName = meta.serviceName;
-                    }
-
-                    buffer.push(structuredLog);
-                }
-            }
-            else {
-                buffer.push({ message: log });
-            }
-        });
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
         return buffer;
     }
