@@ -15,7 +15,7 @@ const { NewRelicForwarder } = require('../shared/nrforwarder');
 const { app } = require('@azure/functions');
 
 
-app.eventHub('fnlogforwardeaapim', {
+app.eventHub('fnnrforwarder', {
     connection: 'NR_TRIGGER_CONNECTION_STRING',
     eventHubName: '%eventHubName%',
     cardinality: 'many',
