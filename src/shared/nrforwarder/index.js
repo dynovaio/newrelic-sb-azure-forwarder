@@ -36,6 +36,7 @@ const NR_DEFAULT_MAX_RETRIES = 3;
 const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
 const NR_DEFAULT_ENVIRONMENT = 'dev'
 const NR_DEFAULT_SERVICE_NAME = null
+const NR_DEFAULT_SOURCE_SERVICE_TYPE = null
 
 // New Relic configuration variables
 const NR_LICENSE_KEY = process.env.NR_LICENSE_KEY;
@@ -49,6 +50,7 @@ const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT;
 
 const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
 
+const NR_SOURCE_SERVICE_TYPE = process.env.NR_SOURCE_SERVICE_TYPE || NR_DEFAULT_SOURCE_SERVICE_TYPE
 
 
 /**
@@ -493,16 +495,23 @@ const NewRelicForwarder = async (messages, context) => {
     context.log(`Event hub function processed ${messages.length} messages from "${context.triggerMetadata.partitionContext.eventHubName}" `);
 
     if (!NR_LICENSE_KEY && !NR_INSERT_KEY) {
-        context.log.error(
+        context.error(
             'You have to configure either your LICENSE key or insights INSERT key. ' +
             'Please follow the instructions in README'
         );
         return;
     }
 
+    if (!NR_SOURCE_SERVICE_TYPE) {
+        context.error(
+            'You have to configure your source service type. ' +
+            'Please follow the instructions in README'
+        );
+    }
+
     let buffer = transformData(messages, context);
     if (buffer.length === 0) {
-        context.log.warn('logs format is invalid');
+        context.warn('logs format is invalid');
         return;
     }
 
@@ -524,14 +533,14 @@ const NewRelicForwarder = async (messages, context) => {
                 );
                 context.log('Logs payload successfully sent to New Relic');
             } catch (e) {
-                context.log.error(
+                context.error(
                     'Max retries reached: failed to send logs payload to New Relic'
                 );
-                context.log.error('Exception: ', JSON.stringify(e));
+                context.error('Exception: ', JSON.stringify(e));
             }
         } catch (e) {
-            context.log.error('Error during payload compression');
-            context.log.error('Exception: ', JSON.stringify(e));
+            context.error('Error during payload compression');
+            context.error('Exception: ', JSON.stringify(e));
         }
     }
 }
