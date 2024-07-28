@@ -3,7 +3,7 @@
 /**
  * Process logs for API Management
  */
-function logProcessor (log, context) {
+function logProcessor (log, prefix, context) {
     const { properties, ...meta } = log;
 
     if (properties !== undefined) {
@@ -35,7 +35,7 @@ function logProcessor (log, context) {
                 }
             }
 
-            if (properties.response?.headers !== undefined) {
+            if (properties.response?.headers !== undefined && properties.response?.headers !== '{}') {
                 try {
                     const responseBeaders = JSON.stringify(JSON.parse(properties.response.headers));
                     properties.response.headers = "ResponseHeaders::" + responseBeaders;
@@ -45,8 +45,8 @@ function logProcessor (log, context) {
             }
 
             let structuredLog = {
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
+                [`${prefix}`]: properties,
+                [`${prefix}.meta`]: meta,
             };
 
             if (meta.time !== undefined) {

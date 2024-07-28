@@ -305,14 +305,14 @@ function transformData (logs, context) {
             context.log('Type of logs: records Array');
             // Extract records from each message and push them into the buffer.
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => buffer.push(processors.apim.logProcessor(log, context)));
+                message.records.forEach((log) => buffer.push(processors.apim.logProcessor(log, NR_CUSTOM_PROPERTIES_PREFIX, context)));
             });
             return buffer;
         } // type JSON array
 
         context.log('Type of logs: JSON Array');
         // Convert each array element to an object with a 'message' property and push it into the buffer.
-        parsedLogs.forEach((log) => buffer.push(processors.apim.logProcessor(log, context)));
+        parsedLogs.forEach((log) => buffer.push(processors.apim.logProcessor(log, NR_CUSTOM_PROPERTIES_PREFIX, context)));
 
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
         return buffer;
