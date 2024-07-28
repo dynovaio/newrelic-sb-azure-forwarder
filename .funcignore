@@ -1,12 +1,6 @@
+.*
+_*
 *.md
-*.js.map
-*.ts
-.git*
-.vscode
-.scripts
-__azurite_db * __.json
-__blobstorage__
-__queuestorage__
-local.settings.json
-test
-tsconfig.json
+policies
+scripts
+*.settings.json

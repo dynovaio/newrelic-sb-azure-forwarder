@@ -11,7 +11,7 @@
 /**
  * Log Forwarder Application
  */
-const { NewRelicLogForwarder } = require('../shared/nrlogforwarder');
+const { NewRelicForwarder } = require('../shared/nrforwarder');
 const { app } = require('@azure/functions');
 
 
@@ -19,5 +19,5 @@ app.eventHub('fnlogforwardeaapim', {
     connection: 'NR_TRIGGER_CONNECTION_STRING',
     eventHubName: '%eventHubName%',
     cardinality: 'many',
-    handler: async (messages, context) => await NewRelicLogForwarder(messages, context)
+    handler: async (messages, context) => await NewRelicForwarder(messages, context)
 });

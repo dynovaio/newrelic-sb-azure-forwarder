@@ -16,6 +16,7 @@
 const https = require('https');
 const url = require('url');
 const zlib = require('zlib');
+const processors = require('./processors');
 
 /**
  * Global constants and configuration variables
@@ -47,6 +48,7 @@ const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || N
 const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT;
 
 const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
+
 
 
 /**
@@ -248,70 +250,6 @@ function addMetadata (logEntry) {
     return logEntry;
 }
 
-/**
- * Process logs for API Management
- */
-function processApimLog (log, context) {
-    const { properties, ...meta } = log;
-
-    if (properties !== undefined) {
-        if (typeof properties === 'object' && properties !== null) {
-            console.log(properties)
-            if (properties.request?.body !== undefined) {
-                try {
-                    const requestBody = JSON.stringify(JSON.parse(properties.request.body));
-                    properties.request.body = "RequestBody::" + requestBody;
-                } catch (error) {
-                    context.warn("Can't process request body.");
-                }
-            }
-
-            if (properties.request?.headers !== undefined) {
-                try {
-                    const requestBeaders = JSON.stringify(JSON.parse(properties.request.headers));
-                    properties.request.headers = "RequestHeaders::" + requestBeaders;
-                } catch (error) {
-                    context.warn("Can't process request headers.");
-                }
-            }
-            if (properties.response?.body !== undefined) {
-                try {
-                    const responseBody = JSON.stringify(JSON.parse(properties.response.body));
-                    properties.response.body = "ResponseBody::" + responseBody;
-                } catch (error) {
-                    context.warn("Can't process response body.");
-                }
-            }
-
-            if (properties.response?.headers !== undefined) {
-                try {
-                    const responseBeaders = JSON.stringify(JSON.parse(properties.response.headers));
-                    properties.response.headers = "ResponseHeaders::" + responseBeaders;
-                } catch (error) {
-                    context.warn("Can't process response headers.");
-                }
-            }
-
-            let structuredLog = {
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta,
-            };
-
-            if (meta.time !== undefined) {
-                structuredLog.timestamp = new Date(meta.time).getTime();
-            }
-
-            if (meta.serviceName !== undefined) {
-                structuredLog.serviceName = meta.serviceName;
-            }
-
-            return structuredLog
-        }
-    }
-
-    return log
-}
-
 
 /**
  * Transforms the input logs into a consistent format suitable for processing.
@@ -367,14 +305,14 @@ function transformData (logs, context) {
             context.log('Type of logs: records Array');
             // Extract records from each message and push them into the buffer.
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => buffer.push(processApimLog(log, context)));
+                message.records.forEach((log) => buffer.push(processors.apim.logProcessor(log, context)));
             });
             return buffer;
         } // type JSON array
 
         context.log('Type of logs: JSON Array');
         // Convert each array element to an object with a 'message' property and push it into the buffer.
-        parsedLogs.forEach((log) => buffer.push(processApimLog(log, context)));
+        parsedLogs.forEach((log) => buffer.push(processors.apim.logProcessor(log, context)));
 
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
         return buffer;
@@ -551,7 +489,7 @@ function wait (delay) {
     });
 }
 
-const NewRelicLogForwarder = async (messages, context) => {
+const NewRelicForwarder = async (messages, context) => {
     context.log(`Event hub function processed ${messages.length} messages from "${context.triggerMetadata.partitionContext.eventHubName}" `);
 
     if (!NR_LICENSE_KEY && !NR_INSERT_KEY) {
@@ -599,5 +537,5 @@ const NewRelicLogForwarder = async (messages, context) => {
 }
 
 module.exports = {
-    NewRelicLogForwarder,
+    NewRelicForwarder,
 }
