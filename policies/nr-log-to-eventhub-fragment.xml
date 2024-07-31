@@ -5,81 +5,238 @@
     - Copy and paste your code here or simply start coding
 -->
 <fragment>
-    <log-to-eventhub logger-id="nr-logger"> @{ var epoch = new DateTime(1970, 1, 1); var LogRecord =
-        new JObject( new JProperty("kind", context.Variables.GetValueOrDefault("nrLogKind", null)),
-        new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds +
-        context.Elapsed.TotalMilliseconds), new JProperty("timestamp", context.Timestamp), new
-        JProperty("timespan", context.Elapsed.TotalMilliseconds), new JProperty("requestId",
-        context.RequestId), new JProperty("serviceName", context.Deployment.ServiceId) ); var
-        LogRecordProperties = new JObject(); if (context.Product != null) { var ProductProperties =
-        new JObject( new JProperty("id", context.Product.Id), new JProperty("name",
-        context.Product.Name), new JProperty("state", context.Product.State), new
-        JProperty("approvalRequired", context.Product.ApprovalRequired), new
-        JProperty("subscriptionsLimit", context.Product.SubscriptionsLimit), new
-        JProperty("subscriptionRequired", context.Product.SubscriptionRequired) ); if
-        (context.Product.Workspace != null) { var WorkspaceProperties = new JObject( new
-        JProperty("id", context.Product.Workspace.Id), new JProperty("name",
-        context.Product.Workspace.Name) ); ProductProperties.Add( new JProperty("workspace",
-        WorkspaceProperties) ); } LogRecordProperties.Add( new JProperty("product",
-        ProductProperties) ); } if (context.Api != null) { var ApiProperties = new JObject( new
-        JProperty("id", context.Api.Id), new JProperty("name", context.Api.Name), new
-        JProperty("path", context.Api.Path), new JProperty("revision", context.Api.Revision), new
-        JProperty("isCurrentRevision", context.Api.IsCurrentRevision), new JProperty("version",
-        context.Api.Version) ); if (context.Api.ServiceUrl != null) { var ServiceUrlProperties = new
-        JObject( new JProperty("host", context.Api.ServiceUrl.Host), new JProperty("path",
-        context.Api.ServiceUrl.Path), new JProperty("port", context.Api.ServiceUrl.Port), new
-        JProperty("queryString", context.Api.ServiceUrl.QueryString), new JProperty("scheme",
-        context.Api.ServiceUrl.Scheme) ); ApiProperties.Add( new JProperty("serviceUrl",
-        ServiceUrlProperties) ); } if (context.Api.Workspace != null) { var WorkspaceProperties =
-        new JObject( new JProperty("id", context.Api.Workspace.Id), new JProperty("name",
-        context.Api.Workspace.Name) ); ApiProperties.Add( new JProperty("workspace",
-        WorkspaceProperties) ); } LogRecordProperties.Add( new JProperty("api", ApiProperties) ); }
-        if (context.Operation != null) { var OperationProperties = new JObject( new JProperty("id",
-        context.Operation.Id), new JProperty("name", context.Operation.Name), new
-        JProperty("method", context.Operation.Method), new JProperty("urlTemplate",
-        context.Operation.UrlTemplate) ); LogRecordProperties.Add( new JProperty("operation",
-        OperationProperties) ); } if (context.Subscription != null) { var SubscriptionProperties =
-        new JObject( new JProperty("id", context.Subscription.Id), new JProperty("key",
-        context.Subscription.Key), new JProperty("name", context.Subscription.Name) );
-        LogRecordProperties.Add( new JProperty("subscription", SubscriptionProperties) ); } if
-        (context.User != null ) { var UserProperties = new JObject( new JProperty("id",
-        context.User.Id), new JProperty("email", context.User.Email), new JProperty("firstName",
-        context.User.FirstName), new JProperty("lastName", context.User.LastName) );
-        LogRecordProperties.Add( new JProperty("user", UserProperties) ); } var RequestProperties =
-        new JObject( new JProperty("id", context.RequestId), new JProperty("ip",
-        context.Request.IpAddress), new JProperty("method", context.Request.Method) ); if
-        (context.Request.Body != null) { RequestProperties.Add( new JProperty("body",
-        context.Request.Body.As<string>(preserveContent: true)) ); } if (context.Request.Headers !=
-        null) { var RequestHeadersProperties = new JObject(); foreach (var header in
-        context.Request.Headers) { RequestHeadersProperties.Add( new JProperty(header.Key,
-        header.Value) ); } RequestProperties.Add( new JProperty("headers",
-        RequestHeadersProperties.ToString()) ); } if (context.Request.Url != null) { var
-        RequestUrlProperties = new JObject( new JProperty("host", context.Request.Url.Host), new
-        JProperty("path", context.Request.Url.Path), new JProperty("port",
-        context.Request.Url.Port), new JProperty("queryString", context.Request.Url.QueryString),
-        new JProperty("scheme", context.Request.Url.Scheme) ); RequestProperties.Add( new
-        JProperty("url", RequestUrlProperties) ); } if (context.Request.OriginalUrl != null) { var
-        RequestOriginalUrlProperties = new JObject( new JProperty("host",
-        context.Request.OriginalUrl.Host), new JProperty("path", context.Request.OriginalUrl.Path),
-        new JProperty("port", context.Request.OriginalUrl.Port), new JProperty("queryString",
-        context.Request.OriginalUrl.QueryString), new JProperty("scheme",
-        context.Request.OriginalUrl.Scheme) ); RequestProperties.Add( new JProperty("originalUrl",
-        RequestOriginalUrlProperties) ); } LogRecordProperties.Add( new JProperty("request",
-        RequestProperties) ); if (context.Response != null) { var ResponseProperties = new JObject(
-        new JProperty("status", new JObject( new JProperty("code", context.Response.StatusCode), new
-        JProperty("reason", context.Response.StatusReason) )) ); if (context.Response.Body != null)
-        { ResponseProperties.Add( new JProperty("body", context.Response.Body.As<string>(preserveContent:
-        true)) ); } if (context.Response.Headers != null) { var ResponseHeadersProperties = new
-        JObject(); foreach (var header in context.Response.Headers) { ResponseHeadersProperties.Add(
-        new JProperty(header.Key, header.Value) ); } ResponseProperties.Add( new
-        JProperty("headers", ResponseHeadersProperties.ToString()) ); } LogRecordProperties.Add( new
-        JProperty("response", ResponseProperties) ); } if (context.LastError != null) { var
-        ErrorProperties = new JObject( new JProperty("lastError.source", context.LastError.Source),
-        new JProperty("lastError.reason", context.LastError.Reason), new
-        JProperty("lastError.message", context.LastError.Message), new JProperty("lastError.scope",
-        context.LastError.Scope), new JProperty("lastError.section", context.LastError.Section), new
-        JProperty("lastError.path", context.LastError.Path), new JProperty("lastError.policyId",
-        context.LastError.PolicyId) ); LogRecordProperties.Add( new JProperty("error",
-        ErrorProperties) ); } LogRecord.Add( new JProperty("properties", LogRecordProperties) );
-        return LogRecord.ToString(); } </log-to-eventhub>
+    <log-to-eventhub logger-id="nr-logger"> @{
+        var epoch = new DateTime(1970, 1, 1);
+
+        var LogRecord = new JObject(
+            new JProperty("kind", context.Variables.GetValueOrDefault("nrLogKind", null)),
+            new JProperty("traceId", context.Variables.GetValueOrDefault("nrTraceId", null)),
+            new JProperty("spanId", context.Variables.GetValueOrDefault("nrSpanId", null)),
+            new JProperty("parentSpanId", context.Variables.GetValueOrDefault("nrParentSpanId", null)),
+            new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds + context.Elapsed.TotalMilliseconds),
+            new JProperty("timestamp", context.Timestamp),
+            new JProperty("timespan", context.Elapsed.TotalMilliseconds),
+            new JProperty("requestId", context.RequestId),
+            new JProperty("serviceName", context.Deployment.ServiceId)
+        );
+
+        var LogRecordProperties = new JObject();
+
+        if (context.Product != null) {
+            var ProductProperties = new JObject(
+                new JProperty("id", context.Product.Id),
+                new JProperty("name", context.Product.Name),
+                new JProperty("state", context.Product.State),
+                new JProperty("approvalRequired", context.Product.ApprovalRequired),
+                new JProperty("subscriptionsLimit", context.Product.SubscriptionsLimit),
+                new JProperty("subscriptionRequired", context.Product.SubscriptionRequired)
+            );
+
+            if (context.Product.Workspace != null) {
+                var WorkspaceProperties = new JObject(
+                    new JProperty("id", context.Product.Workspace.Id),
+                    new JProperty("name", context.Product.Workspace.Name)
+                );
+
+                ProductProperties.Add(
+                    new JProperty("workspace", WorkspaceProperties)
+                );
+            }
+
+            LogRecordProperties.Add(
+                new JProperty("product", ProductProperties)
+            );
+        }
+
+        if (context.Api != null) {
+            var ApiProperties = new JObject(
+                new JProperty("id", context.Api.Id),
+                new JProperty("name", context.Api.Name),
+                new JProperty("path", context.Api.Path),
+                new JProperty("revision", context.Api.Revision),
+                new JProperty("isCurrentRevision", context.Api.IsCurrentRevision),
+                new JProperty("version", context.Api.Version)
+            );
+
+            if (context.Api.ServiceUrl != null) {
+                var ServiceUrlProperties = new JObject(
+                    new JProperty("host", context.Api.ServiceUrl.Host),
+                    new JProperty("path", context.Api.ServiceUrl.Path),
+                    new JProperty("port", context.Api.ServiceUrl.Port),
+                    new JProperty("queryString", context.Api.ServiceUrl.QueryString),
+                    new JProperty("scheme", context.Api.ServiceUrl.Scheme)
+                );
+
+                ApiProperties.Add(
+                    new JProperty("serviceUrl", ServiceUrlProperties)
+                );
+            }
+
+            if (context.Api.Workspace != null) {
+                var WorkspaceProperties = new JObject(
+                    new JProperty("id", context.Api.Workspace.Id),
+                    new JProperty("name", context.Api.Workspace.Name)
+                );
+
+                ApiProperties.Add(
+                    new JProperty("workspace", WorkspaceProperties)
+                );
+            }
+
+            LogRecordProperties.Add(
+                new JProperty("api", ApiProperties)
+            );
+        }
+
+        if (context.Operation != null) {
+            var OperationProperties = new JObject(
+                new JProperty("id", context.Operation.Id),
+                new JProperty("name", context.Operation.Name),
+                new JProperty("method", context.Operation.Method),
+                new JProperty("urlTemplate", context.Operation.UrlTemplate)
+            );
+
+            LogRecordProperties.Add(
+                new JProperty("operation", OperationProperties)
+            );
+        }
+
+        if (context.Subscription != null) {
+            var SubscriptionProperties = new JObject(
+                new JProperty("id", context.Subscription.Id),
+                new JProperty("key", context.Subscription.Key),
+                new JProperty("name", context.Subscription.Name)
+            );
+
+            LogRecordProperties.Add(
+                new JProperty("subscription", SubscriptionProperties)
+            );
+        }
+
+        if (context.User != null ) {
+            var UserProperties = new JObject(
+                new JProperty("id", context.User.Id),
+                new JProperty("email", context.User.Email),
+                new JProperty("firstName", context.User.FirstName),
+                new JProperty("lastName", context.User.LastName)
+            );
+
+            LogRecordProperties.Add(
+                new JProperty("user", UserProperties)
+            );
+        }
+
+        var RequestProperties = new JObject(
+            new JProperty("id", context.RequestId),
+            new JProperty("ip", context.Request.IpAddress),
+            new JProperty("method", context.Request.Method)
+        );
+
+        if (context.Request.Body != null) {
+            RequestProperties.Add(
+                new JProperty("body", context.Request.Body.As<string>(preserveContent: true))
+            );
+        }
+
+        if (context.Request.Headers != null) {
+            var RequestHeadersProperties = new JObject();
+
+            foreach (var header in context.Request.Headers) {
+                RequestHeadersProperties.Add(
+                    new JProperty(header.Key, header.Value)
+                );
+            }
+
+            RequestProperties.Add(
+                new JProperty("headers", RequestHeadersProperties.ToString())
+            );
+        }
+
+        if (context.Request.Url != null) {
+            var RequestUrlProperties = new JObject(
+                new JProperty("host", context.Request.Url.Host),
+                new JProperty("path", context.Request.Url.Path),
+                new JProperty("port", context.Request.Url.Port),
+                new JProperty("queryString", context.Request.Url.QueryString),
+                new JProperty("scheme", context.Request.Url.Scheme)
+            );
+
+            RequestProperties.Add(
+                new JProperty("url", RequestUrlProperties)
+            );
+        }
+
+        if (context.Request.OriginalUrl != null) {
+            var RequestOriginalUrlProperties = new JObject(
+                new JProperty("host", context.Request.OriginalUrl.Host),
+                new JProperty("path", context.Request.OriginalUrl.Path),
+                new JProperty("port", context.Request.OriginalUrl.Port),
+                new JProperty("queryString", context.Request.OriginalUrl.QueryString),
+                new JProperty("scheme", context.Request.OriginalUrl.Scheme)
+            );
+
+            RequestProperties.Add(
+                new JProperty("originalUrl", RequestOriginalUrlProperties)
+            );
+        }
+
+        LogRecordProperties.Add(
+            new JProperty("request", RequestProperties)
+        );
+
+        if (context.Response != null) {
+            var ResponseProperties = new JObject(
+                new JProperty("status", new JObject(
+                    new JProperty("code", context.Response.StatusCode),
+                    new JProperty("reason", context.Response.StatusReason)
+                ))
+            );
+
+            if (context.Response.Body != null) {
+                ResponseProperties.Add(
+                    new JProperty("body", context.Response.Body.As<string>(preserveContent: true))
+                );
+            }
+
+            if (context.Response.Headers != null) {
+                var ResponseHeadersProperties = new JObject();
+
+                foreach (var header in context.Response.Headers) {
+                    ResponseHeadersProperties.Add(
+                        new JProperty(header.Key, header.Value)
+                    );
+                }
+
+                ResponseProperties.Add(
+                    new JProperty("headers", ResponseHeadersProperties.ToString())
+                );
+            }
+
+            LogRecordProperties.Add(
+                new JProperty("response", ResponseProperties)
+            );
+        }
+
+        if (context.LastError != null) {
+            var ErrorProperties = new JObject(
+                new JProperty("lastError.source", context.LastError.Source),
+                new JProperty("lastError.reason", context.LastError.Reason),
+                new JProperty("lastError.message", context.LastError.Message),
+                new JProperty("lastError.scope", context.LastError.Scope),
+                new JProperty("lastError.section", context.LastError.Section),
+                new JProperty("lastError.path", context.LastError.Path),
+                new JProperty("lastError.policyId", context.LastError.PolicyId)
+            );
+
+            LogRecordProperties.Add(
+                new JProperty("error", ErrorProperties)
+            );
+        }
+
+        LogRecord.Add(
+            new JProperty("properties", LogRecordProperties)
+        );
+
+        return LogRecord.ToString();
+    }</log-to-eventhub>
 </fragment>

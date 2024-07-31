@@ -1,7 +1,7 @@
 /**
  * New Relic Log forwarder for Azure B2C
  *
- * Developed by Atentus Peru Development Team:
+ * Developed by Dynova Development Team:
  * - Martin Vuelta <mavuelta@atentus.com>
  * - Eduardo Yallico <eduardo.yallico@atentusinternacional.com>
  * - Luis Factor <luis.factor@atentusinternacional.com>
@@ -13,44 +13,118 @@
 /**
  * Imports
  */
-const https = require('https');
-const url = require('url');
-const zlib = require('zlib');
-const processors = require('./processors');
+var https = require('https')
+var zlib = require('zlib')
+const processors = require('./processors')
 
 /**
  * Global constants and configuration variables
  */
 
 // Versioning
-const VERSION = '0.0.1';
+const VERSION = '0.0.1'
 
 // New Relic constants
-const NR_LOGS_SOURCE = 'azure';
-const NR_MAX_PAYLOAD_SIZE = 1000 * 1024;
+const NR_LOGS_SOURCE = 'azure'
+const NR_MAX_PAYLOAD_SIZE = 1000 * 1024
 
-const NR_DEFAULT_ENDPOINT = 'https://log-api.newrelic.com/log/v1';
-const NR_DEFAULT_RETRY_INTERVAL = 2000; // 2 seconds
-const NR_DEFAULT_MAX_RETRIES = 3;
-
-const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
+// New Relic settings default values
+const NR_DEFAULT_LOG_ENDPOINT = 'https://log-api.newrelic.com/log/v1'
+const NR_DEFAULT_TRACE_ENDPOINT = 'https://trace-api.newrelic.com/trace/v1'
+const NR_DEFAULT_RETRY_INTERVAL = 2000 // 2 seconds
+const NR_DEFAULT_MAX_RETRIES = 3
 const NR_DEFAULT_ENVIRONMENT = 'dev'
 const NR_DEFAULT_SERVICE_NAME = null
 const NR_DEFAULT_SOURCE_SERVICE_TYPE = null
+const NR_DEFAULT_FORWARD_TRACING = false
 
-// New Relic configuration variables
+// New Relic settings Required settings
 const NR_LICENSE_KEY = process.env.NR_LICENSE_KEY;
-const NR_ENDPOINT = process.env.NR_ENDPOINT || NR_DEFAULT_ENDPOINT;
-const NR_TAGS = process.env.NR_TAGS; // Semicolon-seperated tags
-const NR_MAX_RETRIES = process.env.NR_MAX_RETRIES || NR_DEFAULT_MAX_RETRIES;
-const NR_RETRY_INTERVAL = process.env.NR_RETRY_INTERVAL || NR_DEFAULT_RETRY_INTERVAL;
 
-const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX;
-const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT;
-
+// New Relic Settings with default values
+const NR_LOG_ENDPOINT = process.env.NR_LOG_ENDPOINT || NR_DEFAULT_LOG_ENDPOINT
+const NR_TRACE_ENDPOINT = process.env.NR_TRACE_ENDPOINT || NR_DEFAULT_TRACE_ENDPOINT
+const NR_MAX_RETRIES = parseInt(process.env.NR_MAX_RETRIES) || NR_DEFAULT_MAX_RETRIES
+const NR_RETRY_INTERVAL = parseInt(process.env.NR_RETRY_INTERVAL) || NR_DEFAULT_RETRY_INTERVAL
+const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT
 const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
-
 const NR_SOURCE_SERVICE_TYPE = process.env.NR_SOURCE_SERVICE_TYPE || NR_DEFAULT_SOURCE_SERVICE_TYPE
+const NR_FORWARD_TRACING = (/true/i).test(process.env.NR_FORWARD_TRACING) || NR_DEFAULT_FORWARD_TRACING
+
+// Optional New Relic Settings
+const NR_TAGS = process.env.NR_TAGS; // Semicolon-seperated tags
+
+
+/**
+ * Compresses log data and sends it to New Relic. If the compressed payload exceeds the maximum size,
+ * the data is split and sent in parts.
+ *
+ * @param {Array<Object>} data - The array of log entries to be compressed and sent.
+ * @param {Object} context - The context object containing information about the current execution context.
+ * @param {function} context.log - The logging function provided by the execution environment.
+ * @param {function} context.error - The error logging function provided by the execution environment.
+ * @returns {Promise<void>} A Promise that resolves when the data has been successfully sent or an error occurs.
+ *
+ * @example
+ * const data = [
+ *   { message: 'Log entry 1' },
+ *   { message: 'Log entry 2' }
+ * ];
+ * const context = {
+ *   log: console.log, // Logging function
+ *   error: console.error // Error logging function
+ * };
+ * compressAndSend(data, context)
+ *   .then(() => {
+ *     // Data successfully sent
+ *   })
+ *   .catch(error => {
+ *     // Handle error during compression or sending
+ *   });
+ */
+function compressAndSend (data, kind, endpoint, headers, context) {
+    return compressData(JSON.stringify(getPayload(data, kind, context)))
+        .then((compressedPayload) => {
+            if (compressedPayload.length > NR_MAX_PAYLOAD_SIZE) {
+                if (data.length === 1) {
+                    context.error(
+                        'Cannot send the payload as the size of single line exceeds the limit'
+                    );
+                    return;
+                }
+
+                let halfwayThrough = Math.floor(data.length / 2);
+
+                let arrayFirstHalf = data.slice(0, halfwayThrough);
+                let arraySecondHalf = data.slice(halfwayThrough, data.length);
+
+                return Promise.all([
+                    compressAndSend(arrayFirstHalf, endpoint, headers, context),
+                    compressAndSend(arraySecondHalf, endpoint, headers, context),
+                ]);
+            } else {
+                return retryMax(httpSend, NR_MAX_RETRIES, NR_RETRY_INTERVAL, [
+                    compressedPayload,
+                    endpoint,
+                    headers,
+                    context,
+                ])
+                    .then(() =>
+                        context.log('Logs payload successfully sent to New Relic.')
+                    )
+                    .catch((e) => {
+                        context.error(
+                            'Max retries reached: failed to send logs payload to New Relic'
+                        );
+                        context.error('Exception: ', JSON.stringify(e));
+                    });
+            }
+        })
+        .catch((e) => {
+            context.error('Error during payload compression.');
+            context.error('Exception: ', JSON.stringify(e));
+        });
+}
 
 
 /**
@@ -72,24 +146,11 @@ const NR_SOURCE_SERVICE_TYPE = process.env.NR_SOURCE_SERVICE_TYPE || NR_DEFAULT_
  */
 function compressData (data) {
     return new Promise((resolve, reject) => {
-        /**
-         * zlib.gzip method is used to compress the input data using gzip algorithm.
-         * @param {Buffer | string} data - The data to be compressed.
-         * @param {function} callback - The callback function to handle compression result.
-         * @param {Error} callback.error - An error object if compression fails, null otherwise.
-         * @param {Buffer} callback.compressedData - The compressed data as a Buffer if compression succeeds.
-         */
-        zlib.gzip(data, (error, compressedData) => {
-            if (!error) {
+        zlib.gzip(data, (e, compressedData) => {
+            if (!e) {
                 resolve(compressedData);
             } else {
-                /**
-                 * If compression fails, the Promise is rejected with an error object.
-                 * @typedef {Object} CompressionError
-                 * @property {Error} error - The error object containing details of the compression failure.
-                 * @property {Buffer} res - The compressed data (null in case of failure).
-                 */
-                reject({ error, res: null });
+                reject({ error: e, res: null });
             }
         });
     });
@@ -97,24 +158,75 @@ function compressData (data) {
 
 
 /**
- * Generates payloads containing logs with common attributes and metadata.
+ * Appends metadata to each log entry in the provided array of logs.
  *
- * @param {Array} logs - An array of log lines to be included in the payloads.
- * @param {Object} context - The context object containing information about the current execution context.
- * @param {string} context.functionName - The name of the AWS Lambda function.
- * @param {string} context.invocationId - The unique identifier for the current invocation.
- * @returns {Array<Array<Object>>} An array of payloads, where each payload contains logs with common attributes and metadata.
+ * @param {Array<Object>} logs - The array of log entries to which metadata will be appended.
+ * @returns {Array<Object>} An array of log entries with metadata appended.
  *
  * @example
- * const logs = ['log line 1', 'log line 2', 'log line 3'];
- * const context = {
- *   functionName: 'myLambdaFunction',
- *   invocationId: '12345',
- * };
- * const payloads = generatePayloads(logs, context);
- * // payloads is an array of arrays, each containing logs with common attributes and metadata.
+ * const logs = [
+ *   { message: 'Log entry 1' },
+ *   { message: 'Log entry 2' }
+ * ];
+ * const updatedLogs = appendMetaDataToAllLogLines(logs);
+ * // updatedLogs will include metadata such as subscriptionId and resourceGroup based on resourceId
  */
-function generatePayloads (logs, context) {
+function appendMetaDataToAllLogLines (logs) {
+    return logs.map((log) => addMetadata(log));
+}
+
+
+/**
+ * Constructs a payload for logging, including common attributes and the provided logs.
+ *
+ * @param {Array} logs - The array of log entries to include in the payload.
+ * @param {Object} context - The context object containing information about the current execution context.
+ * @returns {Array<Object>} An array containing a single object with common attributes and logs.
+ *
+ * @example
+ * const logs = [
+ *   { message: 'Log entry 1' },
+ *   { message: 'Log entry 2' }
+ * ];
+ * const context = {};
+ * const payload = getPayload(logs, context);
+ * // payload will include common attributes and the provided logs
+ */
+function getPayload (data, kind, context) {
+    context.log("New Relic Payload");
+    context.log(
+        JSON.stringify([
+            {
+                common: getCommonAttributes(context),
+                [`${kind}`]: data,
+            },
+        ])
+    );
+
+    return [
+        {
+            common: getCommonAttributes(context),
+            [`${kind}`]: data,
+        },
+    ];
+}
+
+
+/**
+ * Retrieves common attributes for logging, including plugin details, Azure context, tags, and environment information.
+ *
+ * @param {Object} context - The context object containing information about the current execution context.
+ * @returns {Object} An object containing common attributes for logging.
+ *
+ * @example
+ * const context = {
+ *   functionName: 'myFunction',
+ *   invocationId: '1234-5678'
+ * };
+ * const attributes = getCommonAttributes(context);
+ * // attributes will include plugin details, Azure context, tags, and environment information
+ */
+function getCommonAttributes (context) {
     let serviceDetails = {}
 
     if (NR_SERVICE_NAME !== null) {
@@ -125,48 +237,24 @@ function generatePayloads (logs, context) {
 
     const common = {
         attributes: {
-            plugin: {
-                type: NR_LOGS_SOURCE,
-                version: VERSION,
-            },
-            azure: {
-                forwardername: context.functionName,
-                invocationid: context.invocationId,
-            },
-            tags: getTags(),
+            "plugin.type": NR_LOGS_SOURCE,
+            "plugin.version": VERSION,
+            "azure.forwardername": context.functionName,
+            "azure.invocationid": context.invocationId,
             environment: NR_ENVIRONMENT,
             ...serviceDetails
         },
-    };
-    let payload = [
-        {
-            common: common,
-            logs: [],
-        },
-    ];
-    let payloads = [];
+    }
 
-    logs.forEach((logLine) => {
-        const log = addMetadata(logLine);
-        if (
-            JSON.stringify(payload).length + JSON.stringify(log).length <
-            NR_MAX_PAYLOAD_SIZE
-        ) {
-            payload[0].logs.push(log);
-        } else {
-            payloads.push(payload);
-            payload = [
-                {
-                    common: common,
-                    logs: [],
-                },
-            ];
-            payload[0].logs.push(log);
-        }
-    });
-    payloads.push(payload);
-    return payloads;
+    const tags = getTags();
+
+    if (tags) {
+        common.attributes.tags = tags;
+    }
+
+    return common;
 }
+
 
 /**
  * Parses the NR_TAGS global variable and returns an object representing tags.
@@ -186,16 +274,13 @@ function getTags () {
         tags.forEach((tag) => {
             const keyValue = tag.split(':');
             if (keyValue.length > 1) {
-                /**
-                 * Extracts key-value pairs from the colon-separated string and populates the tagsObj.
-                 * @param {string} keyValue[0] - The key of the tag.
-                 * @param {string} keyValue[1] - The value of the tag.
-                 */
                 tagsObj[keyValue[0]] = keyValue[1];
             }
         });
+        return tagsObj;
     }
-    return tagsObj;
+
+    return null
 }
 
 
@@ -215,10 +300,6 @@ function getTags () {
  * // logEntryWithMetadata will have additional metadata properties based on the resourceId.
  */
 function addMetadata (logEntry) {
-    /**
-     * Check if the logEntry has a valid resourceId property and extract metadata from it.
-     * @param {string} logEntry.resourceId - The Azure Resource Manager (ARM) resourceId.
-     */
     if (
         logEntry.resourceId !== undefined &&
         typeof logEntry.resourceId === 'string' &&
@@ -227,38 +308,23 @@ function addMetadata (logEntry) {
         let resourceId = logEntry.resourceId.toLowerCase().split('/');
         if (resourceId.length > 2) {
             logEntry.metadata = {};
-            /**
-             * Extracts subscriptionId from the ARM resourceId and adds it to the log entry metadata.
-             * @param {string} resourceId[2] - The subscriptionId part of the ARM resourceId.
-             */
             logEntry.metadata.subscriptionId = resourceId[2];
         }
         if (resourceId.length > 4) {
-            /**
-             * Extracts resourceGroup from the ARM resourceId and adds it to the log entry metadata.
-             * @param {string} resourceId[4] - The resourceGroup part of the ARM resourceId.
-             */
             logEntry.metadata.resourceGroup = resourceId[4];
         }
         if (resourceId.length > 6 && resourceId[6]) {
-            /**
-             * Extracts source from the ARM resourceId and adds it to the log entry metadata,
-             * replacing 'microsoft.' with 'azure.' in the source name.
-             * @param {string} resourceId[6] - The source part of the ARM resourceId.
-             */
             logEntry.metadata.source = resourceId[6].replace('microsoft.', 'azure.');
         }
     }
     return logEntry;
 }
 
-
 /**
  * Transforms the input logs into a consistent format suitable for processing.
  *
  * @param {Array|string|Object} logs - The input logs to be transformed, which can be an array, string, or object.
  * @param {Object} context - The context object containing information about the current execution context.
- * @param {function} context.log - The logging function provided by the execution environment.
  * @returns {Array<Object>} An array of log objects in a consistent format suitable for processing.
  *
  * @example
@@ -273,12 +339,10 @@ function transformData (logs, context) {
     // buffer is an array of JSON objects
     let buffer = [];
 
-    // parsedLogs is the result of parsing the input logs using the parseData function.
     let parsedLogs = parseData(logs, context);
 
-    /**
-     * Check the type of parsedLogs and transform it into a consistent log format.
-     */
+    let processor = processors[NR_SOURCE_SERVICE_TYPE].logProcessor
+    // type JSON object
     if (
         !Array.isArray(parsedLogs) &&
         typeof parsedLogs === 'object' &&
@@ -286,17 +350,15 @@ function transformData (logs, context) {
     ) {
         if (parsedLogs.records !== undefined) {
             context.log('Type of logs: records Object');
-            // Extract records and push them into the buffer.
-            parsedLogs.records.forEach((log) => buffer.push(log));
+            parsedLogs.records.forEach((log) => buffer.push(processor(log, context)));
             return buffer;
         }
         context.log('Type of logs: JSON Object');
-        // Push the entire JSON object into the buffer.
         buffer.push(parsedLogs);
         return buffer;
     }
 
-    // Handle bad format by returning an empty buffer.
+    // Bad Format
     if (!Array.isArray(parsedLogs)) {
         return buffer;
     }
@@ -305,24 +367,21 @@ function transformData (logs, context) {
         // type JSON records
         if (parsedLogs[0].records !== undefined) {
             context.log('Type of logs: records Array');
-            // Extract records from each message and push them into the buffer.
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => buffer.push(processors[NR_SOURCE_SERVICE_TYPE].logProcessor(log, NR_CUSTOM_PROPERTIES_PREFIX, context)));
+                message.records.forEach((log) => buffer.push(processor(log, context)));
             });
             return buffer;
         } // type JSON array
-
         context.log('Type of logs: JSON Array');
-        // Convert each array element to an object with a 'message' property and push it into the buffer.
-        parsedLogs.forEach((log) => buffer.push(processors[NR_SOURCE_SERVICE_TYPE].logProcessor(log, NR_CUSTOM_PROPERTIES_PREFIX, context)));
-
+        // normally should be "buffer.push(log)" but that will fail if the array mixes JSON and strings
+        parsedLogs.forEach((log) => buffer.push(processor(log, context)));
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
         return buffer;
     }
+
     if (typeof parsedLogs[0] === 'string') {
         // type string array
         context.log('Type of logs: string Array');
-        // Convert each string element to an object with a 'message' property and push it into the buffer.
         parsedLogs.forEach((logString) => buffer.push({ message: logString }));
         return buffer;
     }
@@ -335,7 +394,6 @@ function transformData (logs, context) {
  *
  * @param {Array|string} logs - The input logs to be parsed, which can be an array or a string.
  * @param {Object} context - The context object containing information about the current execution context.
- * @param {function} context.warn - The warning function provided by the execution environment.
  * @returns {Array|Object|string} Parsed logs in a consistent format: array, object, or string.
  *
  * @example
@@ -348,26 +406,28 @@ function transformData (logs, context) {
  * // parsedArray is an array with the first element parsed: [ { key: 'value' }, 'not a JSON string' ]
  */
 function parseData (logs, context) {
-    let newLogs = logs;
-
-    // If logs is not an array, attempt to parse it into an object.
     if (!Array.isArray(logs)) {
         try {
-            newLogs = JSON.parse(logs); // for strings, attempt to parse it into an object
+            return JSON.parse(logs); // for strings let's see if we can parse it into Object
         } catch {
             context.warn('Cannot parse logs to JSON');
+            return logs;
         }
-    } else {
+    }
+
+    try {
         // If logs is an array, attempt to parse each element into an object.
-        newLogs = logs.map((log) => {
+        return logs.map((log) => {
             try {
                 return JSON.parse(log); // for arrays, attempt to parse each element into an object
             } catch {
                 return log;
             }
         });
+    } catch (e) {
+        // for both of the above exception cases, return logs would be fine.
+        return logs;
     }
-    return newLogs;
 }
 
 
@@ -376,7 +436,6 @@ function parseData (logs, context) {
  *
  * @param {Buffer} data - The data to be sent, compressed as a Buffer.
  * @param {Object} context - The context object containing information about the current execution context.
- * @param {function} context.log - The logging function provided by the execution environment.
  * @returns {Promise<string>} A Promise that resolves with the response body if the request is successful (HTTP 202),
  *                            or rejects with an error object if the request fails.
  *
@@ -393,19 +452,20 @@ function parseData (logs, context) {
  *     // Handle error
  *   });
  */
-function httpSend (data, context) {
+function httpSend (data, endpoint, headers, context) {
     return new Promise((resolve, reject) => {
-        const urlObj = url.parse(NR_ENDPOINT);
+        const url = new URL(endpoint);
         const options = {
-            hostname: urlObj.hostname,
+            hostname: url.hostname,
             port: 443,
-            path: urlObj.pathname,
-            protocol: urlObj.protocol,
+            path: url.pathname,
+            protocol: url.protocol,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'gzip',
-                'X-License-Key': NR_LICENSE_KEY
+                'X-License-Key': NR_LICENSE_KEY,
+                ...headers
             },
         };
 
@@ -491,12 +551,11 @@ function wait (delay) {
     });
 }
 
-const NewRelicForwarder = async (messages, context) => {
-    context.log(`Event hub function processed ${messages.length} messages from "${context.triggerMetadata.partitionContext.eventHubName}" `);
 
-    if (!NR_LICENSE_KEY && !NR_INSERT_KEY) {
+async function NewRelicForwarder (messages, context) {
+    if (!NR_LICENSE_KEY) {
         context.error(
-            'You have to configure either your LICENSE key or insights INSERT key. ' +
+            'You have to configure either your LICENSE key or insights insert key. ' +
             'Please follow the instructions in README'
         );
         return;
@@ -507,44 +566,47 @@ const NewRelicForwarder = async (messages, context) => {
             'You have to configure your source service type. ' +
             'Please follow the instructions in README'
         );
+        return;
     }
 
-    let buffer = transformData(messages, context);
+    let logs;
+    if (typeof messages === 'string') {
+        logs = messages.trim().split('\n');
+    } else if (Buffer.isBuffer(messages)) {
+        logs = messages.toString('utf8').trim().split('\n');
+    } else if (!Array.isArray(messages)) {
+        logs = JSON.stringify(messages).trim().split('\n');
+    } else {
+        logs = messages;
+    }
+
+    let buffer = transformData(logs, context);
     if (buffer.length === 0) {
         context.warn('logs format is invalid');
         return;
     }
 
-    let compressedPayload;
-    let payloads = generatePayloads(buffer, context);
+    let logLines = appendMetaDataToAllLogLines(buffer);
 
-    for (const payload of payloads) {
-        try {
-            compressedPayload = await compressData(JSON.stringify(payload));
-            try {
-                await retryMax(
-                    httpSend,
-                    NR_MAX_RETRIES,
-                    NR_RETRY_INTERVAL,
-                    [
-                        compressedPayload,
-                        context,
-                    ]
-                );
-                context.log('Logs payload successfully sent to New Relic');
-            } catch (e) {
-                context.error(
-                    'Max retries reached: failed to send logs payload to New Relic'
-                );
-                context.error('Exception: ', JSON.stringify(e));
-            }
-        } catch (e) {
-            context.error('Error during payload compression');
-            context.error('Exception: ', JSON.stringify(e));
+    if (NR_FORWARD_TRACING) {
+        let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context);
+
+        if (spans.length > 0) {
+            context.log("Sending spans and logs to New Relic.");
+            await Promise.all([
+                compressAndSend(logLines, "logs", NR_LOG_ENDPOINT, {}, context),
+                compressAndSend(spans, "spans", NR_TRACE_ENDPOINT, { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' }, context)
+            ]);
+            return;
         }
     }
-}
+
+    context.log("Sending logs to New Relic.");
+    await compressAndSend(logLines, "logs", NR_LOG_ENDPOINT, {}, context);
+    return;
+};
+
 
 module.exports = {
-    NewRelicForwarder,
+    NewRelicForwarder
 }

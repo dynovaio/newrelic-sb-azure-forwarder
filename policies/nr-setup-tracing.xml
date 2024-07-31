@@ -1,0 +1,72 @@
+<!--
+    IMPORTANT:
+    - Policy fragment are included as-is whenever they are referenced.
+    - If using variables. Ensure they are setup before use.
+    - Copy and paste your code here or simply start coding
+-->
+<fragment>
+    <choose>
+        <when
+            condition="@(!Regex.IsMatch(context.Request.Headers.GetValueOrDefault("traceparent",""), @"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500)))">
+            <set-variable
+                name="nrTraceId"
+                value="@{
+                    Random random = new Random();
+                    return new string(Enumerable.Repeat("abcdef0123456789", 32).Select(s => s[random.Next(s.Length)]).ToArray());
+                }" />
+            <set-variable
+                name="nrSpanId"
+                value="@{
+                    Random random = new Random();
+                    return new string(Enumerable.Repeat("abcdef0123456789", 16).Select(s => s[random.Next(s.Length)]).ToArray());
+                }" />
+        </when>
+        <otherwise>
+            <set-variable
+                name="nrTraceId"
+                value="@( context.Request.Headers.GetValueOrDefault("traceparent","").Split('-')[1] )" />
+            <set-variable
+                name="nrOldSpanId"
+                value="@( context.Request.Headers.GetValueOrDefault("traceparent","").Split('-')[2] )" />
+            <set-variable
+                name="nrSpanId"
+                value="@{
+                    Random random = new Random();
+                    return new string(Enumerable.Repeat("abcdef0123456789", 16).Select(s => s[random.Next(s.Length)]).ToArray());
+                }" />
+        </otherwise>
+    </choose>
+    <set-header
+        name="traceparent"
+        exists-action="override">
+        <value>@{
+            String[] traceParentTokens = {
+                "00",
+                context.Variables.GetValueOrDefault("nrTraceId", ""),
+                context.Variables.GetValueOrDefault("nrSpanId", ""), "00"
+            };
+            return String.Join("-", traceParentTokens);
+        }</value>
+    </set-header>
+    <set-header
+        name="tracestate"
+        exists-action="override">
+        <value>@{
+            String accountId = context.Variables.GetValueOrDefault("nrAccountId", "");
+            String[] stateTokens = {
+                "0",
+                "0",
+                accountId,
+                context.Variables.GetValueOrDefault("nrAppId", ""),
+                context.Variables.GetValueOrDefault("nrSpanId", ""),
+                "",
+                "",
+                "",
+                ((long)((context.Timestamp - new DateTime(1970, 1, 1)).TotalMilliseconds)).ToString()
+            };
+            String state = String.Join("-", stateTokens);
+            String[] traceStateTokens = {accountId, state};
+            return String.Join("@nr=", traceStateTokens);
+        }</value>
+    </set-header>
+</fragment>

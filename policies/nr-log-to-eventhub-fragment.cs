@@ -2,6 +2,9 @@ var epoch = new DateTime(1970, 1, 1);
 
 var LogRecord = new JObject(
     new JProperty("kind", context.Variables.GetValueOrDefault("nrLogKind", null)),
+    new JProperty("traceId", context.Variables.GetValueOrDefault("nrTraceId", null)),
+    new JProperty("spanId", context.Variables.GetValueOrDefault("nrSpanId", null)),
+    new JProperty("parentSpanId", context.Variables.GetValueOrDefault("nrParentSpanId", null)),
     new JProperty("time", (long)(context.Timestamp - epoch).TotalMilliseconds + context.Elapsed.TotalMilliseconds),
     new JProperty("timestamp", context.Timestamp),
     new JProperty("timespan", context.Elapsed.TotalMilliseconds),
