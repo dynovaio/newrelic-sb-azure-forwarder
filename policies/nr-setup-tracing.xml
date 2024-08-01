@@ -5,6 +5,16 @@
     - Copy and paste your code here or simply start coding
 -->
 <fragment>
+    <set-header
+        name="BrowserTraceParent"
+        exists-action="override">
+        <value>@( context.Request.Headers.GetValueOrDefault("traceparent","") )</value>
+    </set-header>
+    <set-header
+        name="BrowserTraceState"
+        exists-action="override">
+        <value>@( context.Request.Headers.GetValueOrDefault("tracestate","") )</value>
+    </set-header>
     <choose>
         <when
             condition="@(!Regex.IsMatch(context.Request.Headers.GetValueOrDefault("traceparent",""), @"^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500)))">
@@ -26,7 +36,7 @@
                 name="nrTraceId"
                 value="@( context.Request.Headers.GetValueOrDefault("traceparent","").Split('-')[1] )" />
             <set-variable
-                name="nrOldSpanId"
+                name="nrParentSpanId"
                 value="@( context.Request.Headers.GetValueOrDefault("traceparent","").Split('-')[2] )" />
             <set-variable
                 name="nrSpanId"
