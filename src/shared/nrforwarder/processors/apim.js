@@ -83,6 +83,16 @@ function logProcessor (log, context) {
                 structuredLog.serviceName = meta.serviceName;
             }
 
+            let level = 'info'
+
+            if (meta.kind === LogKind.error) {
+                level = 'error'
+            } else if (properties.response?.status?.code !== undefined && properties.response.status.code >= 400) {
+                level = 'error'
+            }
+
+            structuredLog.level = level;
+
             return structuredLog
         }
     }
@@ -94,6 +104,14 @@ function logProcessor (log, context) {
  * Extract trace information from logs
 */
 function tracingExtractor (buffer, context) {
+    function getHttpUrl (log) {
+        const scheme = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.scheme;
+        const host = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.host;
+        const path = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.path;
+
+        return `${scheme}://${host}${path}`
+    }
+
     let spans = buffer.map(log => {
         const kind = log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].kind;
 
@@ -104,7 +122,11 @@ function tracingExtractor (buffer, context) {
                 'timestamp': log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].time,
                 'attributes': {
                     'duration.ms': log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].timespan,
-                    'name': log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].api.name,
+                    'duration': log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].timespan / 1000,
+                    'name': log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.originalUrl.path,
+                    'host': log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.originalUrl.host,
+                    'http.method': log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.method,
+                    'http.url': getHttpUrl(log)
                 }
             };
 
@@ -114,6 +136,28 @@ function tracingExtractor (buffer, context) {
 
             if (log.serviceName !== undefined && log.serviceName !== null) {
                 span.attributes['service.name'] = log.serviceName;
+            }
+
+            if (log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response?.status?.code !== undefined) {
+                span.attributes['http.statusCode'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.code;
+
+                if (span.attributes['http.statusCode'] >= 400) {
+                    span.attributes['error'] = true;
+                    span.attributes['error.message'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason;
+                    span.attributes['error.class'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason;
+                }
+            }
+
+            if (log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response?.status?.reason !== undefined) {
+                span.attributes['http.statusText'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason;
+            }
+
+            if (typeof log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error === 'object' && log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error !== null) {
+                span.attributes['error'] = true;
+                span.attributes['error.message'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.message;
+                span.attributes['error.class'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.reason;
+                span.attributes['error.source'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.source;
+                span.attributes['error.section'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.section;
             }
 
             return span

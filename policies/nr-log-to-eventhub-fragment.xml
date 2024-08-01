@@ -219,13 +219,13 @@
 
         if (context.LastError != null) {
             var ErrorProperties = new JObject(
-                new JProperty("lastError.source", context.LastError.Source),
-                new JProperty("lastError.reason", context.LastError.Reason),
-                new JProperty("lastError.message", context.LastError.Message),
-                new JProperty("lastError.scope", context.LastError.Scope),
-                new JProperty("lastError.section", context.LastError.Section),
-                new JProperty("lastError.path", context.LastError.Path),
-                new JProperty("lastError.policyId", context.LastError.PolicyId)
+                new JProperty("source", context.LastError.Source),
+                new JProperty("reason", context.LastError.Reason),
+                new JProperty("message", context.LastError.Message),
+                new JProperty("scope", context.LastError.Scope),
+                new JProperty("section", context.LastError.Section),
+                new JProperty("path", context.LastError.Path),
+                new JProperty("policyId", context.LastError.PolicyId)
             );
 
             LogRecordProperties.Add(
