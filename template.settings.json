@@ -12,6 +12,8 @@
     "NR_RETRY_INTERVAL": 2000,
     "NR_CUSTOM_PROPERTIES_PREFIX": "tel",
     "NR_ENVIRONMENT": "dev",
-    "NR_SERVICE_NAME": "Azure B2C"
+    "NR_SERVICE_NAME": "Azure B2C",
+    "NR_SOURCE_SERVICE_TYPE": "apim",
+    "NR_FORWARD_TRACING": false
   }
 }

@@ -16,6 +16,7 @@ associated with the policy.
         <set-variable name="nrAppId" value="MzM3NjI0NnxFWFR8U0VSVklDRXw2MDg1NDYzNTY3MDIyNjg0NTYw" />
         <set-variable name="nrAccountId" value="3376246" />
         <set-variable name="nrLogKind" value="request" />
+        <set-variable name="nrLoggerId" value="nr-logger" />
         <include-fragment fragment-id="pf-nr-setup-tracing" />
         <include-fragment fragment-id="pf-nr-log-to-eventhub" />
     </inbound>
@@ -24,10 +25,12 @@ associated with the policy.
     </backend>
     <outbound>
         <set-variable name="nrLogKind" value="response" />
+        <set-variable name="nrLoggerId" value="nr-logger" />
         <include-fragment fragment-id="pf-nr-log-to-eventhub" />
     </outbound>
     <on-error>
         <set-variable name="nrLogKind" value="error" />
+        <set-variable name="nrLoggerId" value="nr-logger" />
         <include-fragment fragment-id="pf-nr-log-to-eventhub" />
     </on-error>
 </policies>

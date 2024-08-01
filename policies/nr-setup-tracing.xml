@@ -53,7 +53,7 @@
             String[] traceParentTokens = {
                 "00",
                 context.Variables.GetValueOrDefault("nrTraceId", ""),
-                context.Variables.GetValueOrDefault("nrSpanId", ""), "00"
+                context.Variables.GetValueOrDefault("nrSpanId", ""), "01"
             };
             return String.Join("-", traceParentTokens);
         }</value>
