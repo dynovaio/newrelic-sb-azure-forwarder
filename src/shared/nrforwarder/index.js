@@ -7,8 +7,7 @@
  * - Luis Factor <luis.factor@atentusinternacional.com>
  */
 
-'use strict';
-
+'use strict'
 
 /**
  * Imports
@@ -39,7 +38,7 @@ const NR_DEFAULT_SOURCE_SERVICE_TYPE = null
 const NR_DEFAULT_FORWARD_TRACING = false
 
 // New Relic settings Required settings
-const NR_LICENSE_KEY = process.env.NR_LICENSE_KEY;
+const NR_LICENSE_KEY = process.env.NR_LICENSE_KEY
 
 // New Relic Settings with default values
 const NR_LOG_ENDPOINT = process.env.NR_LOG_ENDPOINT || NR_DEFAULT_LOG_ENDPOINT
@@ -49,11 +48,10 @@ const NR_RETRY_INTERVAL = parseInt(process.env.NR_RETRY_INTERVAL) || NR_DEFAULT_
 const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT
 const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
 const NR_SOURCE_SERVICE_TYPE = process.env.NR_SOURCE_SERVICE_TYPE || NR_DEFAULT_SOURCE_SERVICE_TYPE
-const NR_FORWARD_TRACING = (/true/i).test(process.env.NR_FORWARD_TRACING) || NR_DEFAULT_FORWARD_TRACING
+const NR_FORWARD_TRACING = /true/i.test(process.env.NR_FORWARD_TRACING) || NR_DEFAULT_FORWARD_TRACING
 
 // Optional New Relic Settings
-const NR_TAGS = process.env.NR_TAGS; // Semicolon-seperated tags
-
+const NR_TAGS = process.env.NR_TAGS // Semicolon-seperated tags
 
 /**
  * Compresses log data and sends it to New Relic. If the compressed payload exceeds the maximum size,
@@ -82,50 +80,43 @@ const NR_TAGS = process.env.NR_TAGS; // Semicolon-seperated tags
  *     // Handle error during compression or sending
  *   });
  */
-function compressAndSend (data, kind, endpoint, headers, context) {
+function compressAndSend(data, kind, endpoint, headers, context) {
     return compressData(JSON.stringify(getPayload(data, kind, context)))
         .then((compressedPayload) => {
             if (compressedPayload.length > NR_MAX_PAYLOAD_SIZE) {
                 if (data.length === 1) {
-                    context.error(
-                        'Cannot send the payload as the size of single line exceeds the limit'
-                    );
-                    return;
+                    context.error('Cannot send the payload as the size of single line exceeds the limit')
+                    return
                 }
 
-                let halfwayThrough = Math.floor(data.length / 2);
+                let halfwayThrough = Math.floor(data.length / 2)
 
-                let arrayFirstHalf = data.slice(0, halfwayThrough);
-                let arraySecondHalf = data.slice(halfwayThrough, data.length);
+                let arrayFirstHalf = data.slice(0, halfwayThrough)
+                let arraySecondHalf = data.slice(halfwayThrough, data.length)
 
                 return Promise.all([
                     compressAndSend(arrayFirstHalf, endpoint, headers, context),
-                    compressAndSend(arraySecondHalf, endpoint, headers, context),
-                ]);
+                    compressAndSend(arraySecondHalf, endpoint, headers, context)
+                ])
             } else {
                 return retryMax(httpSend, NR_MAX_RETRIES, NR_RETRY_INTERVAL, [
                     compressedPayload,
                     endpoint,
                     headers,
-                    context,
+                    context
                 ])
-                    .then(() =>
-                        context.log('Logs payload successfully sent to New Relic.')
-                    )
+                    .then(() => context.log('Logs payload successfully sent to New Relic.'))
                     .catch((e) => {
-                        context.error(
-                            'Max retries reached: failed to send logs payload to New Relic'
-                        );
-                        context.error('Exception: ', JSON.stringify(e));
-                    });
+                        context.error('Max retries reached: failed to send logs payload to New Relic')
+                        context.error('Exception: ', JSON.stringify(e))
+                    })
             }
         })
         .catch((e) => {
-            context.error('Error during payload compression.');
-            context.error('Exception: ', JSON.stringify(e));
-        });
+            context.error('Error during payload compression.')
+            context.error('Exception: ', JSON.stringify(e))
+        })
 }
-
 
 /**
  * Compresses the input data using gzip compression algorithm.
@@ -144,18 +135,17 @@ function compressAndSend (data, kind, endpoint, headers, context) {
  *     // Handle compression error
  *   });
  */
-function compressData (data) {
+function compressData(data) {
     return new Promise((resolve, reject) => {
         zlib.gzip(data, (e, compressedData) => {
             if (!e) {
-                resolve(compressedData);
+                resolve(compressedData)
             } else {
-                reject({ error: e, res: null });
+                reject({ error: e, res: null })
             }
-        });
-    });
+        })
+    })
 }
-
 
 /**
  * Appends metadata to each log entry in the provided array of logs.
@@ -171,10 +161,9 @@ function compressData (data) {
  * const updatedLogs = appendMetaDataToAllLogLines(logs);
  * // updatedLogs will include metadata such as subscriptionId and resourceGroup based on resourceId
  */
-function appendMetaDataToAllLogLines (logs) {
-    return logs.map((log) => addMetadata(log));
+function appendMetaDataToAllLogLines(logs) {
+    return logs.map((log) => addMetadata(log))
 }
-
 
 /**
  * Constructs a payload for logging, including common attributes and the provided logs.
@@ -192,25 +181,14 @@ function appendMetaDataToAllLogLines (logs) {
  * const payload = getPayload(logs, context);
  * // payload will include common attributes and the provided logs
  */
-function getPayload (data, kind, context) {
-    context.log("New Relic Payload");
-    context.log(
-        JSON.stringify([
-            {
-                common: getCommonAttributes(context),
-                [`${kind}`]: data,
-            },
-        ])
-    );
-
+function getPayload(data, kind, context) {
     return [
         {
             common: getCommonAttributes(context),
-            [`${kind}`]: data,
-        },
-    ];
+            [`${kind}`]: data
+        }
+    ]
 }
-
 
 /**
  * Retrieves common attributes for logging, including plugin details, Azure context, tags, and environment information.
@@ -226,7 +204,7 @@ function getPayload (data, kind, context) {
  * const attributes = getCommonAttributes(context);
  * // attributes will include plugin details, Azure context, tags, and environment information
  */
-function getCommonAttributes (context) {
+function getCommonAttributes(context) {
     let serviceDetails = {}
 
     if (NR_SERVICE_NAME !== null) {
@@ -237,24 +215,23 @@ function getCommonAttributes (context) {
 
     const common = {
         attributes: {
-            "plugin.type": NR_LOGS_SOURCE,
-            "plugin.version": VERSION,
-            "azure.forwardername": context.functionName,
-            "azure.invocationid": context.invocationId,
+            'plugin.type': NR_LOGS_SOURCE,
+            'plugin.version': VERSION,
+            'azure.forwardername': context.functionName,
+            'azure.invocationid': context.invocationId,
             environment: NR_ENVIRONMENT,
             ...serviceDetails
-        },
+        }
     }
 
-    const tags = getTags();
+    const tags = getTags()
 
     if (tags) {
-        common.attributes.tags = tags;
+        common.attributes.tags = tags
     }
 
-    return common;
+    return common
 }
-
 
 /**
  * Parses the NR_TAGS global variable and returns an object representing tags.
@@ -267,22 +244,21 @@ function getCommonAttributes (context) {
  * // getTags() will return the following object:
  * // { environment: 'production', app: 'myApp' }
  */
-function getTags () {
-    const tagsObj = {};
+function getTags() {
+    const tagsObj = {}
     if (NR_TAGS) {
-        const tags = NR_TAGS.split(';');
+        const tags = NR_TAGS.split(';')
         tags.forEach((tag) => {
-            const keyValue = tag.split(':');
+            const keyValue = tag.split(':')
             if (keyValue.length > 1) {
-                tagsObj[keyValue[0]] = keyValue[1];
+                tagsObj[keyValue[0]] = keyValue[1]
             }
-        });
-        return tagsObj;
+        })
+        return tagsObj
     }
 
     return null
 }
-
 
 /**
  * Adds metadata to a log entry based on the resourceId property.
@@ -299,25 +275,25 @@ function getTags () {
  * const logEntryWithMetadata = addMetadata(logEntry);
  * // logEntryWithMetadata will have additional metadata properties based on the resourceId.
  */
-function addMetadata (logEntry) {
+function addMetadata(logEntry) {
     if (
         logEntry.resourceId !== undefined &&
         typeof logEntry.resourceId === 'string' &&
         logEntry.resourceId.toLowerCase().startsWith('/subscriptions/')
     ) {
-        let resourceId = logEntry.resourceId.toLowerCase().split('/');
+        let resourceId = logEntry.resourceId.toLowerCase().split('/')
         if (resourceId.length > 2) {
-            logEntry.metadata = {};
-            logEntry.metadata.subscriptionId = resourceId[2];
+            logEntry.metadata = {}
+            logEntry.metadata.subscriptionId = resourceId[2]
         }
         if (resourceId.length > 4) {
-            logEntry.metadata.resourceGroup = resourceId[4];
+            logEntry.metadata.resourceGroup = resourceId[4]
         }
         if (resourceId.length > 6 && resourceId[6]) {
-            logEntry.metadata.source = resourceId[6].replace('microsoft.', 'azure.');
+            logEntry.metadata.source = resourceId[6].replace('microsoft.', 'azure.')
         }
     }
-    return logEntry;
+    return logEntry
 }
 
 /**
@@ -335,59 +311,54 @@ function addMetadata (logEntry) {
  * const transformedLogs = transformData(logs, context);
  * // transformedLogs is an array of log objects suitable for further processing.
  */
-function transformData (logs, context) {
+function transformData(logs, context) {
     // buffer is an array of JSON objects
-    let buffer = [];
+    let buffer = []
 
-    let parsedLogs = parseData(logs, context);
+    let parsedLogs = parseData(logs, context)
 
     let processor = processors[NR_SOURCE_SERVICE_TYPE].logProcessor
     // type JSON object
-    if (
-        !Array.isArray(parsedLogs) &&
-        typeof parsedLogs === 'object' &&
-        parsedLogs !== null
-    ) {
+    if (!Array.isArray(parsedLogs) && typeof parsedLogs === 'object' && parsedLogs !== null) {
         if (parsedLogs.records !== undefined) {
-            context.log('Type of logs: records Object');
-            parsedLogs.records.forEach((log) => buffer.push(processor(log, context)));
-            return buffer;
+            context.log('Type of logs: records Object')
+            parsedLogs.records.forEach((log) => buffer.push(processor(log, context)))
+            return buffer
         }
-        context.log('Type of logs: JSON Object');
-        buffer.push(parsedLogs);
-        return buffer;
+        context.log('Type of logs: JSON Object')
+        buffer.push(parsedLogs)
+        return buffer
     }
 
     // Bad Format
     if (!Array.isArray(parsedLogs)) {
-        return buffer;
+        return buffer
     }
 
     if (typeof parsedLogs[0] === 'object' && parsedLogs[0] !== null) {
         // type JSON records
         if (parsedLogs[0].records !== undefined) {
-            context.log('Type of logs: records Array');
+            context.log('Type of logs: records Array')
             parsedLogs.forEach((message) => {
-                message.records.forEach((log) => buffer.push(processor(log, context)));
-            });
-            return buffer;
+                message.records.forEach((log) => buffer.push(processor(log, context)))
+            })
+            return buffer
         } // type JSON array
-        context.log('Type of logs: JSON Array');
+        context.log('Type of logs: JSON Array')
         // normally should be "buffer.push(log)" but that will fail if the array mixes JSON and strings
-        parsedLogs.forEach((log) => buffer.push(processor(log, context)));
+        parsedLogs.forEach((log) => buffer.push(processor(log, context)))
         // Our API can parse the data in "log" to a JSON and ignore "message", so we are good!
-        return buffer;
+        return buffer
     }
 
     if (typeof parsedLogs[0] === 'string') {
         // type string array
-        context.log('Type of logs: string Array');
-        parsedLogs.forEach((logString) => buffer.push({ message: logString }));
-        return buffer;
+        context.log('Type of logs: string Array')
+        parsedLogs.forEach((logString) => buffer.push({ message: logString }))
+        return buffer
     }
-    return buffer;
+    return buffer
 }
-
 
 /**
  * Parses input logs into a consistent format, attempting to convert strings and arrays to objects.
@@ -405,13 +376,13 @@ function transformData (logs, context) {
  * const parsedArray = parseData(logsArray, context);
  * // parsedArray is an array with the first element parsed: [ { key: 'value' }, 'not a JSON string' ]
  */
-function parseData (logs, context) {
+function parseData(logs, context) {
     if (!Array.isArray(logs)) {
         try {
-            return JSON.parse(logs); // for strings let's see if we can parse it into Object
+            return JSON.parse(logs) // for strings let's see if we can parse it into Object
         } catch {
-            context.warn('Cannot parse logs to JSON');
-            return logs;
+            context.warn('Cannot parse logs to JSON')
+            return logs
         }
     }
 
@@ -419,17 +390,16 @@ function parseData (logs, context) {
         // If logs is an array, attempt to parse each element into an object.
         return logs.map((log) => {
             try {
-                return JSON.parse(log); // for arrays, attempt to parse each element into an object
+                return JSON.parse(log) // for arrays, attempt to parse each element into an object
             } catch {
-                return log;
+                return log
             }
-        });
+        })
     } catch (e) {
         // for both of the above exception cases, return logs would be fine.
-        return logs;
+        return logs
     }
 }
-
 
 /**
  * Sends data to a specified HTTP endpoint using a POST request with gzip compression.
@@ -452,9 +422,9 @@ function parseData (logs, context) {
  *     // Handle error
  *   });
  */
-function httpSend (data, endpoint, headers, context) {
+function httpSend(data, endpoint, headers, context) {
     return new Promise((resolve, reject) => {
-        const url = new URL(endpoint);
+        const url = new URL(endpoint)
         const options = {
             hostname: url.hostname,
             port: 443,
@@ -466,33 +436,32 @@ function httpSend (data, endpoint, headers, context) {
                 'Content-Encoding': 'gzip',
                 'X-License-Key': NR_LICENSE_KEY,
                 ...headers
-            },
-        };
+            }
+        }
 
         var req = https.request(options, (res) => {
-            var body = '';
-            res.setEncoding('utf8');
+            var body = ''
+            res.setEncoding('utf8')
             res.on('data', (chunk) => {
-                body += chunk; // don't really do anything with body
-            });
+                body += chunk // don't really do anything with body
+            })
             res.on('end', () => {
-                context.log('Got response:' + res.statusCode);
+                context.log('Got response:' + res.statusCode)
                 if (res.statusCode === 202) {
-                    resolve(body);
+                    resolve(body)
                 } else {
-                    reject({ error: null, res: res });
+                    reject({ error: null, res: res })
                 }
-            });
-        });
+            })
+        })
 
         req.on('error', (e) => {
-            reject({ error: e, res: null });
-        });
-        req.write(data);
-        req.end();
-    });
+            reject({ error: e, res: null })
+        })
+        req.write(data)
+        req.end()
+    })
 }
-
 
 /**
  * Retries the provided function with specified parameters a maximum number of times,
@@ -520,14 +489,11 @@ function httpSend (data, endpoint, headers, context) {
  *     // Handle error after maximum retries
  *   });
  */
-function retryMax (fn, retry, interval, fnParams) {
+function retryMax(fn, retry, interval, fnParams) {
     return fn.apply(this, fnParams).catch((err) => {
-        return retry > 1
-            ? wait(interval).then(() => retryMax(fn, retry - 1, interval, fnParams))
-            : Promise.reject(err);
-    });
+        return retry > 1 ? wait(interval).then(() => retryMax(fn, retry - 1, interval, fnParams)) : Promise.reject(err)
+    })
 }
-
 
 /**
  * Returns a Promise that resolves after the specified delay.
@@ -545,67 +511,73 @@ function retryMax (fn, retry, interval, fnParams) {
  *     // Handle error if Promise is rejected (unlikely in this case)
  *   });
  */
-function wait (delay) {
+function wait(delay) {
     return new Promise((fulfill) => {
-        setTimeout(fulfill, delay || 0);
-    });
+        setTimeout(fulfill, delay || 0)
+    })
 }
 
+async function NewRelicForwarder(messages, context) {
+    context.log('New Relic Forwarder')
 
-async function NewRelicForwarder (messages, context) {
     if (!NR_LICENSE_KEY) {
         context.error(
             'You have to configure either your LICENSE key or insights insert key. ' +
-            'Please follow the instructions in README'
-        );
-        return;
+                'Please follow the instructions in README'
+        )
+        return
     }
 
     if (!NR_SOURCE_SERVICE_TYPE) {
-        context.error(
-            'You have to configure your source service type. ' +
-            'Please follow the instructions in README'
-        );
-        return;
+        context.error('You have to configure your source service type. ' + 'Please follow the instructions in README')
+        return
     }
 
-    let logs;
+    let logs
     if (typeof messages === 'string') {
-        logs = messages.trim().split('\n');
+        logs = messages.trim().split('\n')
     } else if (Buffer.isBuffer(messages)) {
-        logs = messages.toString('utf8').trim().split('\n');
+        logs = messages.toString('utf8').trim().split('\n')
     } else if (!Array.isArray(messages)) {
-        logs = JSON.stringify(messages).trim().split('\n');
+        logs = JSON.stringify(messages).trim().split('\n')
     } else {
-        logs = messages;
+        logs = messages
     }
 
-    let buffer = transformData(logs, context);
+    context.log(`Procesing ${logs.length} messages`)
+    context.log(JSON.stringify(logs))
+
+    let buffer = transformData(logs, context)
     if (buffer.length === 0) {
-        context.warn('logs format is invalid');
-        return;
+        context.warn('logs format is invalid')
+        return
     }
 
-    let logLines = appendMetaDataToAllLogLines(buffer);
+    let logLines = appendMetaDataToAllLogLines(buffer)
 
     if (NR_FORWARD_TRACING) {
-        let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context);
+        let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context)
 
         if (spans.length > 0) {
-            context.log("Sending spans and logs to New Relic.");
+            context.log('Sending spans and logs to New Relic.')
             await Promise.all([
-                compressAndSend(logLines, "logs", NR_LOG_ENDPOINT, {}, context),
-                compressAndSend(spans, "spans", NR_TRACE_ENDPOINT, { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' }, context)
-            ]);
-            return;
+                compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context),
+                compressAndSend(
+                    spans,
+                    'spans',
+                    NR_TRACE_ENDPOINT,
+                    { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' },
+                    context
+                )
+            ])
+            return
         }
     }
 
-    context.log("Sending logs to New Relic.");
-    await compressAndSend(logLines, "logs", NR_LOG_ENDPOINT, {}, context);
-    return;
-};
-
+    context.log('Sending logs to New Relic.')
+    await compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context)
+    return
+}
 
 module.exports = {
     NewRelicForwarder
