@@ -4,6 +4,36 @@ const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || N
 const allowsTracing = false
 
 /**
+ * Get log level from levelId reported by Azure Function App logger.
+ *
+ * @param {*} levelId
+ * @returns string
+ *
+ */
+const getLogLevel = (levelId) => {
+    switch (levelId) {
+        case 0:
+            return 'trace'
+        case 1:
+            return 'debug'
+        case 2:
+            return 'info'
+        case 3:
+            return 'warn'
+        case 4:
+            return 'error'
+        case 5:
+            /**
+             * According to Azure Function App documentation,
+             * levelId 5 is not used corresponding to 'critical' level
+             * https://learn.microsoft.com/en-us/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels
+             */
+            return 'error'
+        default:
+            return 'info'
+    }
+}
+/**
  * Process logs for Azure Function App
  */
 function logProcessor(log, context) {
@@ -70,6 +100,10 @@ function logProcessor(log, context) {
 
             if (meta.time !== undefined) {
                 structuredLog.timestamp = new Date(meta.time).getTime()
+            }
+
+            if (meta.level !== undefined) {
+                structuredLog.level = getLogLevel(meta.level)
             }
 
             if (properties.appName !== undefined) {
