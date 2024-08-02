@@ -1,0 +1,12 @@
+.*
+!.gitignore
+!.funcignore
+!.nvmrc
+!.editorconfig
+!.prettierrc
+!.prettierignore
+
+*.settings.json
+!template.settings.json
+
+node_modules

@@ -1,19 +1,19 @@
 {
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "",
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
-    "NR_TRIGGER_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=Your_Storage_Account_Name;AccountKey=Your_Storage_Account_Key;EndpointSuffix=core.windows.net",
-    "NR_LICENSE_KEY": "Your New RElic License Key",
-    "NR_ENDPOINT": "https://log-api.newrelic.com/log/v1",
-    "NR_TAGS": "tag1:value1;tag2:value2",
-    "NR_MAX_RETRIES": 3,
-    "NR_RETRY_INTERVAL": 2000,
-    "NR_CUSTOM_PROPERTIES_PREFIX": "tel",
-    "NR_ENVIRONMENT": "dev",
-    "NR_SERVICE_NAME": "Azure B2C",
-    "NR_SOURCE_SERVICE_TYPE": "apim",
-    "NR_FORWARD_TRACING": false
-  }
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "",
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+        "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+        "NR_TRIGGER_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=Your_Storage_Account_Name;AccountKey=Your_Storage_Account_Key;EndpointSuffix=core.windows.net",
+        "NR_LICENSE_KEY": "Your New RElic License Key",
+        "NR_ENDPOINT": "https://log-api.newrelic.com/log/v1",
+        "NR_TAGS": "tag1:value1;tag2:value2",
+        "NR_MAX_RETRIES": 3,
+        "NR_RETRY_INTERVAL": 2000,
+        "NR_CUSTOM_PROPERTIES_PREFIX": "tel",
+        "NR_ENVIRONMENT": "dev",
+        "NR_SERVICE_NAME": "Azure B2C",
+        "NR_SOURCE_SERVICE_TYPE": "apim",
+        "NR_FORWARD_TRACING": false
+    }
 }
