@@ -12,7 +12,7 @@ const LogKind = {
 /**
  * Process logs for Azure API Management Service
  */
-function logProcessor (log, context) {
+function logProcessor(log, context) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -30,7 +30,7 @@ function logProcessor (log, context) {
             }
 
             if (meta.resourceId !== undefined) {
-                structuredLog.serviceName = meta.resourceId.split('/').at(-1).toLowerCase();
+                structuredLog.serviceName = meta.resourceId.split('/').at(-1).toLowerCase()
             }
 
             return structuredLog
