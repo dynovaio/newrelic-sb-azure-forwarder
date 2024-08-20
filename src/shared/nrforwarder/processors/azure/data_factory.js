@@ -1,16 +1,10 @@
 const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
 const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX
 
-const allowsTracing = true
-
-const LogKind = {
-    request: 'request',
-    response: 'response',
-    error: 'error'
-}
+const allowsTracing = false
 
 /**
- * Process logs for Azure API Management Service
+ * Process logs for Azure Data Factory
  */
 function logProcessor(log, context) {
     const { properties, ...meta } = log
@@ -42,6 +36,5 @@ function logProcessor(log, context) {
 
 module.exports = {
     logProcessor,
-    tracingExtractor,
     allowsTracing
 }

@@ -556,21 +556,25 @@ async function NewRelicForwarder(messages, context) {
     let logLines = appendMetaDataToAllLogLines(buffer)
 
     if (NR_FORWARD_TRACING) {
-        let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context)
+        if (processors[NR_SOURCE_SERVICE_TYPE].allowsTracing) {
+            let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context)
 
-        if (spans.length > 0) {
-            context.log('Sending spans and logs to New Relic.')
-            await Promise.all([
-                compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context),
-                compressAndSend(
-                    spans,
-                    'spans',
-                    NR_TRACE_ENDPOINT,
-                    { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' },
-                    context
-                )
-            ])
-            return
+            if (spans.length > 0) {
+                context.log('Sending spans and logs to New Relic.')
+                await Promise.all([
+                    compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context),
+                    compressAndSend(
+                        spans,
+                        'spans',
+                        NR_TRACE_ENDPOINT,
+                        { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' },
+                        context
+                    )
+                ])
+                return
+            }
+        } else {
+            context.warn(`Tracing is not allowed for this service type ${NR_SOURCE_SERVICE_TYPE}`)
         }
     }
 
