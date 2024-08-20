@@ -92,7 +92,7 @@ az functionapp config appsettings set \
         "NR_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}" \
         "NR_TRIGGER_CONNECTION_STRING=${EVENT_HUB_CONNECTION_STRING}" \
         "NR_CUSTOM_PROPERTIES_PREFIX=sb" \
-        "NR_SOURCE_SERVICE_TYPE=apim" \
+        "NR_SOURCE_SERVICE_TYPE=@azure/APIManagementService" \
         "NR_ENVIRONMENT=dev" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
