@@ -8,7 +8,7 @@
         "test": "echo \"No tests yet...\"",
         "format": "prettier . --write",
         "lint": "eslint . --fix",
-        "prepare": "husky"
+        "prepare": "husky || true"
     },
     "dependencies": {
         "@azure/functions": "^4.0.0"
