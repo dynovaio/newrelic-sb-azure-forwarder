@@ -5,7 +5,7 @@
 !.editorconfig
 !.prettierrc
 !.prettierignore
-
+!.husky
 *.settings.json
 !template.settings.json
 

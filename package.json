@@ -1,19 +1,23 @@
 {
-    "name": "logforwarder-azureapim-afn",
-    "version": "1.0.0",
+    "name": "newrelic-sb-azure-forwarder",
+    "version": "0.0.0",
     "description": "",
+    "main": "src/functions/*.js",
     "scripts": {
         "start": "func start",
         "test": "echo \"No tests yet...\"",
         "format": "prettier . --write",
-        "lint": "eslint . --fix"
+        "lint": "eslint . --fix",
+        "prepare": "husky"
     },
     "dependencies": {
-        "@azure/functions": "^4.0.0",
+        "@azure/functions": "^4.0.0"
+    },
+    "devDependencies": {
         "eslint": "^9.8.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.2.1",
-        "prettier": "^3.3.3"
-    },
-    "main": "src/functions/*.js"
+        "prettier": "^3.3.3",
+        "husky": "^9.1.5"
+    }
 }
