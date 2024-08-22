@@ -1,6 +1,3 @@
-const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
-const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX
-
 const allowsTracing = true
 
 const LogKind = {
@@ -12,7 +9,7 @@ const LogKind = {
 /**
  * Process logs for Azure API Management Service
  */
-function logProcessor(log, context) {
+function logProcessor (log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -73,8 +70,8 @@ function logProcessor(log, context) {
 
             structuredLog = {
                 ...structuredLog,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta
+                [`${settings.customPropertiesPrefix}`]: properties,
+                [`${settings.customPropertiesPrefix}.meta`]: meta
             }
 
             if (meta.time !== undefined) {
@@ -105,8 +102,8 @@ function logProcessor(log, context) {
 /**
  * Extract tracing informacion from logs for Azure API Management Service
  */
-function tracingExtractor(buffer, context) {
-    function getHttpUrl(log) {
+function tracingExtractor (buffer, context) {
+    function getHttpUrl (log) {
         const scheme = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.scheme
         const host = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.host
         const path = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.path

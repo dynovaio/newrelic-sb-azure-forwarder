@@ -1,6 +1,3 @@
-const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
-const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX
-
 const allowsTracing = false
 
 /**
@@ -33,10 +30,12 @@ const getLogLevel = (levelId) => {
             return 'info'
     }
 }
+
+
 /**
  * Process logs for Azure Function App
  */
-function logProcessor(log, context) {
+function logProcessor (log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -94,8 +93,8 @@ function logProcessor(log, context) {
 
             structuredLog = {
                 ...structuredLog,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta
+                [`${settings.customPropertiesPrefix}`]: properties,
+                [`${settings.customPropertiesPrefix}.meta`]: meta
             }
 
             if (meta.time !== undefined) {

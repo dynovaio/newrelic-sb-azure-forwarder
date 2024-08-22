@@ -1,12 +1,31 @@
-const NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX = 'custom'
-const NR_CUSTOM_PROPERTIES_PREFIX = process.env.NR_CUSTOM_PROPERTIES_PREFIX || NR_DEFAULT_CUSTOM_PROPERTIES_PREFIX
-
 const allowsTracing = false
+
+/**
+ * Get log level from levelId reported by Azure Data Factory logger.
+ *
+ * @param {*} levelId
+ * @returns string
+ *
+ */
+const getLogLevel = (level) => {
+    switch (level) {
+        case 'Informational':
+            return 'info'
+        case 'Warning':
+            return 'warn'
+        case 'Error':
+            return 'error'
+        case 'Critical':
+            return 'error'
+        default:
+            return 'info'
+    }
+}
 
 /**
  * Process logs for Azure Data Factory
  */
-function logProcessor(log, context) {
+function logProcessor (log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -15,8 +34,8 @@ function logProcessor(log, context) {
 
             structuredLog = {
                 ...structuredLog,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}`]: properties,
-                [`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`]: meta
+                [`${settings.customPropertiesPrefix}`]: properties,
+                [`${settings.customPropertiesPrefix}.meta`]: meta
             }
 
             if (meta.time !== undefined) {
@@ -25,6 +44,10 @@ function logProcessor(log, context) {
 
             if (meta.resourceId !== undefined) {
                 structuredLog.serviceName = meta.resourceId.split('/').at(-1).toLowerCase()
+            }
+
+            if (meta.level !== undefined) {
+                structuredLog.level = getLogLevel(meta.level)
             }
 
             return structuredLog
