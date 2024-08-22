@@ -185,6 +185,7 @@ function getCommonAttributes(context) {
             'plugin.version': VERSION,
             'azure.forwardername': context.functionName,
             'azure.invocationid': context.invocationId,
+            'azure.resourceType': settings.sourceServiceType,
             environment: settings.environment,
             ...serviceDetails
         }
@@ -500,7 +501,6 @@ async function NewRelicForwarder(messages, context) {
     }
 
     context.log(`Procesing ${logs.length} messages`)
-    context.log(JSON.stringify(logs))
 
     let buffer = transformData(logs, context)
     if (buffer.length === 0) {

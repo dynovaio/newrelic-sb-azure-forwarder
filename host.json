@@ -8,7 +8,7 @@
             }
         },
         "logLevel": {
-            "default": "Information",
+            "default": "Error",
             "Host.Results": "Error",
             "Function": "Information",
             "Host.Aggregator": "Error"
