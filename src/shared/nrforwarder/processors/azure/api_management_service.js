@@ -9,7 +9,7 @@ const LogKind = {
 /**
  * Process logs for Azure API Management Service
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -102,8 +102,8 @@ function logProcessor (log, context, settings) {
 /**
  * Extract tracing informacion from logs for Azure API Management Service
  */
-function tracingExtractor (buffer, context) {
-    function getHttpUrl (log) {
+function tracingExtractor(buffer, context) {
+    function getHttpUrl(log) {
         const scheme = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.scheme
         const host = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.host
         const path = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.path
