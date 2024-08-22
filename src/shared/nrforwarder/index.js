@@ -1,5 +1,5 @@
 /**
- * New Relic Log forwarder for Azure B2C
+ * New Relic Forwarder for Azure Services
  *
  * Developed by Dynova Development Team:
  * - Martin Vuelta <mavuelta@atentus.com>
@@ -14,44 +14,10 @@
  */
 var https = require('https')
 var zlib = require('zlib')
+
 const processors = require('./processors')
-
-/**
- * Global constants and configuration variables
- */
-
-// Versioning
-const VERSION = '0.0.1'
-
-// New Relic constants
-const NR_LOGS_SOURCE = 'azure'
-const NR_MAX_PAYLOAD_SIZE = 1000 * 1024
-
-// New Relic settings default values
-const NR_DEFAULT_LOG_ENDPOINT = 'https://log-api.newrelic.com/log/v1'
-const NR_DEFAULT_TRACE_ENDPOINT = 'https://trace-api.newrelic.com/trace/v1'
-const NR_DEFAULT_RETRY_INTERVAL = 2000 // 2 seconds
-const NR_DEFAULT_MAX_RETRIES = 3
-const NR_DEFAULT_ENVIRONMENT = 'dev'
-const NR_DEFAULT_SERVICE_NAME = null
-const NR_DEFAULT_SOURCE_SERVICE_TYPE = null
-const NR_DEFAULT_FORWARD_TRACING = false
-
-// New Relic settings Required settings
-const NR_LICENSE_KEY = process.env.NR_LICENSE_KEY
-
-// New Relic Settings with default values
-const NR_LOG_ENDPOINT = process.env.NR_LOG_ENDPOINT || NR_DEFAULT_LOG_ENDPOINT
-const NR_TRACE_ENDPOINT = process.env.NR_TRACE_ENDPOINT || NR_DEFAULT_TRACE_ENDPOINT
-const NR_MAX_RETRIES = parseInt(process.env.NR_MAX_RETRIES) || NR_DEFAULT_MAX_RETRIES
-const NR_RETRY_INTERVAL = parseInt(process.env.NR_RETRY_INTERVAL) || NR_DEFAULT_RETRY_INTERVAL
-const NR_ENVIRONMENT = process.env.NR_ENVIRONMENT || NR_DEFAULT_ENVIRONMENT
-const NR_SERVICE_NAME = process.env.NR_SERVICE_NAME || NR_DEFAULT_SERVICE_NAME
-const NR_SOURCE_SERVICE_TYPE = process.env.NR_SOURCE_SERVICE_TYPE || NR_DEFAULT_SOURCE_SERVICE_TYPE
-const NR_FORWARD_TRACING = /true/i.test(process.env.NR_FORWARD_TRACING) || NR_DEFAULT_FORWARD_TRACING
-
-// Optional New Relic Settings
-const NR_TAGS = process.env.NR_TAGS // Semicolon-seperated tags
+const { VERSION } = require('./version')
+const { settings } = require('./settings')
 
 /**
  * Compresses log data and sends it to New Relic. If the compressed payload exceeds the maximum size,
@@ -80,10 +46,10 @@ const NR_TAGS = process.env.NR_TAGS // Semicolon-seperated tags
  *     // Handle error during compression or sending
  *   });
  */
-function compressAndSend(data, kind, endpoint, headers, context) {
+function compressAndSend (data, kind, endpoint, headers, context) {
     return compressData(JSON.stringify(getPayload(data, kind, context)))
         .then((compressedPayload) => {
-            if (compressedPayload.length > NR_MAX_PAYLOAD_SIZE) {
+            if (compressedPayload.length > settings.maxPayloadSize) {
                 if (data.length === 1) {
                     context.error('Cannot send the payload as the size of single line exceeds the limit')
                     return
@@ -99,7 +65,7 @@ function compressAndSend(data, kind, endpoint, headers, context) {
                     compressAndSend(arraySecondHalf, endpoint, headers, context)
                 ])
             } else {
-                return retryMax(httpSend, NR_MAX_RETRIES, NR_RETRY_INTERVAL, [
+                return retryMax(httpSend, settings.maxRetries, settings.retryInterval, [
                     compressedPayload,
                     endpoint,
                     headers,
@@ -135,7 +101,7 @@ function compressAndSend(data, kind, endpoint, headers, context) {
  *     // Handle compression error
  *   });
  */
-function compressData(data) {
+function compressData (data) {
     return new Promise((resolve, reject) => {
         zlib.gzip(data, (e, compressedData) => {
             if (!e) {
@@ -161,7 +127,7 @@ function compressData(data) {
  * const updatedLogs = appendMetaDataToAllLogLines(logs);
  * // updatedLogs will include metadata such as subscriptionId and resourceGroup based on resourceId
  */
-function appendMetaDataToAllLogLines(logs) {
+function appendMetaDataToAllLogLines (logs) {
     return logs.map((log) => addMetadata(log))
 }
 
@@ -181,7 +147,7 @@ function appendMetaDataToAllLogLines(logs) {
  * const payload = getPayload(logs, context);
  * // payload will include common attributes and the provided logs
  */
-function getPayload(data, kind, context) {
+function getPayload (data, kind, context) {
     return [
         {
             common: getCommonAttributes(context),
@@ -204,22 +170,22 @@ function getPayload(data, kind, context) {
  * const attributes = getCommonAttributes(context);
  * // attributes will include plugin details, Azure context, tags, and environment information
  */
-function getCommonAttributes(context) {
+function getCommonAttributes (context) {
     let serviceDetails = {}
 
-    if (NR_SERVICE_NAME !== null) {
+    if (settings.serviceName !== null) {
         serviceDetails = {
-            serviceName: NR_SERVICE_NAME
+            serviceName: settings.serviceName
         }
     }
 
     const common = {
         attributes: {
-            'plugin.type': NR_LOGS_SOURCE,
+            'plugin.type': settings.logsSource,
             'plugin.version': VERSION,
             'azure.forwardername': context.functionName,
             'azure.invocationid': context.invocationId,
-            environment: NR_ENVIRONMENT,
+            environment: settings.environment,
             ...serviceDetails
         }
     }
@@ -234,20 +200,20 @@ function getCommonAttributes(context) {
 }
 
 /**
- * Parses the NR_TAGS global variable and returns an object representing tags.
+ * Parses the settings.tags global variable and returns an object representing tags.
  *
- * @returns {Object} An object representing tags parsed from the NR_TAGS global variable.
- *                  The keys and values are extracted from the colon-separated key-value pairs in NR_TAGS.
+ * @returns {Object} An object representing tags parsed from the settings.tags global variable.
+ *                  The keys and values are extracted from the colon-separated key-value pairs in settings.tags.
  *
  * @example
- * // If NR_TAGS global variable is set to "environment:production;app:myApp",
+ * // If settings.tags global variable is set to "environment:production;app:myApp",
  * // getTags() will return the following object:
  * // { environment: 'production', app: 'myApp' }
  */
-function getTags() {
+function getTags () {
     const tagsObj = {}
-    if (NR_TAGS) {
-        const tags = NR_TAGS.split(';')
+    if (settings.tags) {
+        const tags = settings.tags.split(';')
         tags.forEach((tag) => {
             const keyValue = tag.split(':')
             if (keyValue.length > 1) {
@@ -275,7 +241,7 @@ function getTags() {
  * const logEntryWithMetadata = addMetadata(logEntry);
  * // logEntryWithMetadata will have additional metadata properties based on the resourceId.
  */
-function addMetadata(logEntry) {
+function addMetadata (logEntry) {
     if (
         logEntry.resourceId !== undefined &&
         typeof logEntry.resourceId === 'string' &&
@@ -311,13 +277,13 @@ function addMetadata(logEntry) {
  * const transformedLogs = transformData(logs, context);
  * // transformedLogs is an array of log objects suitable for further processing.
  */
-function transformData(logs, context) {
+function transformData (logs, context) {
     // buffer is an array of JSON objects
     let buffer = []
 
     let parsedLogs = parseData(logs, context)
 
-    let processor = processors[NR_SOURCE_SERVICE_TYPE].logProcessor
+    let processor = processors[settings.sourceServiceType].logProcessor
     // type JSON object
     if (!Array.isArray(parsedLogs) && typeof parsedLogs === 'object' && parsedLogs !== null) {
         if (parsedLogs.records !== undefined) {
@@ -376,7 +342,7 @@ function transformData(logs, context) {
  * const parsedArray = parseData(logsArray, context);
  * // parsedArray is an array with the first element parsed: [ { key: 'value' }, 'not a JSON string' ]
  */
-function parseData(logs, context) {
+function parseData (logs, context) {
     if (!Array.isArray(logs)) {
         try {
             return JSON.parse(logs) // for strings let's see if we can parse it into Object
@@ -422,7 +388,7 @@ function parseData(logs, context) {
  *     // Handle error
  *   });
  */
-function httpSend(data, endpoint, headers, context) {
+function httpSend (data, endpoint, headers, context) {
     return new Promise((resolve, reject) => {
         const url = new URL(endpoint)
         const options = {
@@ -434,7 +400,7 @@ function httpSend(data, endpoint, headers, context) {
             headers: {
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'gzip',
-                'X-License-Key': NR_LICENSE_KEY,
+                'X-License-Key': settings.licenseKey,
                 ...headers
             }
         }
@@ -489,7 +455,7 @@ function httpSend(data, endpoint, headers, context) {
  *     // Handle error after maximum retries
  *   });
  */
-function retryMax(fn, retry, interval, fnParams) {
+function retryMax (fn, retry, interval, fnParams) {
     return fn.apply(this, fnParams).catch((err) => {
         return retry > 1 ? wait(interval).then(() => retryMax(fn, retry - 1, interval, fnParams)) : Promise.reject(err)
     })
@@ -511,25 +477,16 @@ function retryMax(fn, retry, interval, fnParams) {
  *     // Handle error if Promise is rejected (unlikely in this case)
  *   });
  */
-function wait(delay) {
+function wait (delay) {
     return new Promise((fulfill) => {
         setTimeout(fulfill, delay || 0)
     })
 }
 
-async function NewRelicForwarder(messages, context) {
+async function NewRelicForwarder (messages, context) {
     context.log('New Relic Forwarder')
-
-    if (!NR_LICENSE_KEY) {
-        context.error(
-            'You have to configure either your LICENSE key or insights insert key. ' +
-                'Please follow the instructions in README'
-        )
-        return
-    }
-
-    if (!NR_SOURCE_SERVICE_TYPE) {
-        context.error('You have to configure your source service type. ' + 'Please follow the instructions in README')
+    if (settings.validate()) {
+        context.error('Invalid settings')
         return
     }
 
@@ -555,18 +512,18 @@ async function NewRelicForwarder(messages, context) {
 
     let logLines = appendMetaDataToAllLogLines(buffer)
 
-    if (NR_FORWARD_TRACING) {
-        if (processors[NR_SOURCE_SERVICE_TYPE].allowsTracing) {
-            let spans = processors[NR_SOURCE_SERVICE_TYPE].tracingExtractor(buffer, context)
+    if (settings.forwardTracing) {
+        if (processors[settings.sourceServiceType].allowsTracing) {
+            let spans = processors[settings.sourceServiceType].tracingExtractor(buffer, context)
 
             if (spans.length > 0) {
                 context.log('Sending spans and logs to New Relic.')
                 await Promise.all([
-                    compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context),
+                    compressAndSend(logLines, 'logs', settings.logEndpoint, {}, context),
                     compressAndSend(
                         spans,
                         'spans',
-                        NR_TRACE_ENDPOINT,
+                        settings.traceEndpoint,
                         { 'Data-Format': 'newrelic', 'Data-Format-Version': '1' },
                         context
                     )
@@ -574,12 +531,12 @@ async function NewRelicForwarder(messages, context) {
                 return
             }
         } else {
-            context.warn(`Tracing is not allowed for this service type ${NR_SOURCE_SERVICE_TYPE}`)
+            context.warn(`Tracing is not allowed for this service type ${settings.sourceServiceType}`)
         }
     }
 
     context.log('Sending logs to New Relic.')
-    await compressAndSend(logLines, 'logs', NR_LOG_ENDPOINT, {}, context)
+    await compressAndSend(logLines, 'logs', settings.logEndpoint, {}, context)
     return
 }
 

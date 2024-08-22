@@ -1,7 +1,7 @@
 {
     "name": "newrelic-sb-azure-forwarder",
     "version": "0.0.0",
-    "description": "",
+    "description": "A collection of forwarder functions for Azure Service",
     "main": "src/functions/*.js",
     "scripts": {
         "start": "func start",
