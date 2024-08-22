@@ -46,7 +46,7 @@ const { settings } = require('./settings')
  *     // Handle error during compression or sending
  *   });
  */
-function compressAndSend (data, kind, endpoint, headers, context) {
+function compressAndSend(data, kind, endpoint, headers, context) {
     return compressData(JSON.stringify(getPayload(data, kind, context)))
         .then((compressedPayload) => {
             if (compressedPayload.length > settings.maxPayloadSize) {
@@ -101,7 +101,7 @@ function compressAndSend (data, kind, endpoint, headers, context) {
  *     // Handle compression error
  *   });
  */
-function compressData (data) {
+function compressData(data) {
     return new Promise((resolve, reject) => {
         zlib.gzip(data, (e, compressedData) => {
             if (!e) {
@@ -127,7 +127,7 @@ function compressData (data) {
  * const updatedLogs = appendMetaDataToAllLogLines(logs);
  * // updatedLogs will include metadata such as subscriptionId and resourceGroup based on resourceId
  */
-function appendMetaDataToAllLogLines (logs) {
+function appendMetaDataToAllLogLines(logs) {
     return logs.map((log) => addMetadata(log))
 }
 
@@ -147,7 +147,7 @@ function appendMetaDataToAllLogLines (logs) {
  * const payload = getPayload(logs, context);
  * // payload will include common attributes and the provided logs
  */
-function getPayload (data, kind, context) {
+function getPayload(data, kind, context) {
     return [
         {
             common: getCommonAttributes(context),
@@ -170,7 +170,7 @@ function getPayload (data, kind, context) {
  * const attributes = getCommonAttributes(context);
  * // attributes will include plugin details, Azure context, tags, and environment information
  */
-function getCommonAttributes (context) {
+function getCommonAttributes(context) {
     let serviceDetails = {}
 
     if (settings.serviceName !== null) {
@@ -210,7 +210,7 @@ function getCommonAttributes (context) {
  * // getTags() will return the following object:
  * // { environment: 'production', app: 'myApp' }
  */
-function getTags () {
+function getTags() {
     const tagsObj = {}
     if (settings.tags) {
         const tags = settings.tags.split(';')
@@ -241,7 +241,7 @@ function getTags () {
  * const logEntryWithMetadata = addMetadata(logEntry);
  * // logEntryWithMetadata will have additional metadata properties based on the resourceId.
  */
-function addMetadata (logEntry) {
+function addMetadata(logEntry) {
     if (
         logEntry.resourceId !== undefined &&
         typeof logEntry.resourceId === 'string' &&
@@ -277,7 +277,7 @@ function addMetadata (logEntry) {
  * const transformedLogs = transformData(logs, context);
  * // transformedLogs is an array of log objects suitable for further processing.
  */
-function transformData (logs, context) {
+function transformData(logs, context) {
     // buffer is an array of JSON objects
     let buffer = []
 
@@ -342,7 +342,7 @@ function transformData (logs, context) {
  * const parsedArray = parseData(logsArray, context);
  * // parsedArray is an array with the first element parsed: [ { key: 'value' }, 'not a JSON string' ]
  */
-function parseData (logs, context) {
+function parseData(logs, context) {
     if (!Array.isArray(logs)) {
         try {
             return JSON.parse(logs) // for strings let's see if we can parse it into Object
@@ -388,7 +388,7 @@ function parseData (logs, context) {
  *     // Handle error
  *   });
  */
-function httpSend (data, endpoint, headers, context) {
+function httpSend(data, endpoint, headers, context) {
     return new Promise((resolve, reject) => {
         const url = new URL(endpoint)
         const options = {
@@ -455,7 +455,7 @@ function httpSend (data, endpoint, headers, context) {
  *     // Handle error after maximum retries
  *   });
  */
-function retryMax (fn, retry, interval, fnParams) {
+function retryMax(fn, retry, interval, fnParams) {
     return fn.apply(this, fnParams).catch((err) => {
         return retry > 1 ? wait(interval).then(() => retryMax(fn, retry - 1, interval, fnParams)) : Promise.reject(err)
     })
@@ -477,13 +477,13 @@ function retryMax (fn, retry, interval, fnParams) {
  *     // Handle error if Promise is rejected (unlikely in this case)
  *   });
  */
-function wait (delay) {
+function wait(delay) {
     return new Promise((fulfill) => {
         setTimeout(fulfill, delay || 0)
     })
 }
 
-async function NewRelicForwarder (messages, context) {
+async function NewRelicForwarder(messages, context) {
     context.log('New Relic Forwarder')
 
     settings.validate()

@@ -25,7 +25,7 @@ const getLogLevel = (level) => {
 /**
  * Process logs for Azure Data Factory
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
