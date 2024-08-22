@@ -48,7 +48,7 @@ To use this project, you will need to follow these steps:
 1. Clone this repository to your local machine.
 
     ```bash
-    git clone https://github.com/dynovaio/newrelic-log-forwarder.git
+    git clone https://github.com/dynovaio/newrelic-sb-azure-forwarder.git
     ```
 
 2. Open a terminal and navigate to the root of the repository.
