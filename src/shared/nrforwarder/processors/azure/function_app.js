@@ -100,8 +100,8 @@ function logProcessor(log, context, settings) {
                 structuredLog.timestamp = new Date(meta.time).getTime()
             }
 
-            if (meta.level !== undefined) {
-                structuredLog.level = getLogLevel(meta.level)
+            if (properties.levelId !== undefined) {
+                structuredLog.level = getLogLevel(properties.levelId)
             }
 
             if (properties.appName !== undefined) {
