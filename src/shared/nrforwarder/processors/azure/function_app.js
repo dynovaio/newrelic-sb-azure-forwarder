@@ -34,7 +34,7 @@ const getLogLevel = (levelId) => {
 /**
  * Process logs for Azure Function App
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
