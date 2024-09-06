@@ -43,7 +43,7 @@ const NR_TAGS = process.env.NR_TAGS // Semicolon-seperated tags
 
 // Create configuration class using environment variables as provider for properties
 class ForwarderSettings {
-    constructor() {
+    constructor () {
         this.licenseKey = NR_LICENSE_KEY
         this.logEndpoint = NR_LOG_ENDPOINT
         this.traceEndpoint = NR_TRACE_ENDPOINT
@@ -57,9 +57,19 @@ class ForwarderSettings {
         this.tags = NR_TAGS
         this.logsSource = NR_LOGS_SOURCE
         this.maxPayloadSize = NR_MAX_PAYLOAD_SIZE
+        this.decorationProperties = [
+            "entity.guid",
+            "entity.name",
+            "entity.type",
+            "hostname",
+            "level",
+            "span.id",
+            "timestamp",
+            "trace.id",
+        ];
     }
 
-    validate() {
+    validate () {
         if (!this.licenseKey) {
             const message = 'You have to configure your New Relic license key.'
             throw new TypeError(message)

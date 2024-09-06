@@ -34,7 +34,7 @@ const getLogLevel = (levelId) => {
 /**
  * Process logs for Azure Function App
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -60,11 +60,11 @@ function logProcessor(log, context, settings) {
                 delete properties.message
 
                 let newrelicDecorationProperties = Object.fromEntries(
-                    Object.entries(otherProperties).filter((item) => NR_DECORATION_PROPERTIES.includes(item[0]))
+                    Object.entries(otherProperties).filter((item) => settings.decorationProperties.includes(item[0]))
                 )
 
                 otherProperties = Object.fromEntries(
-                    Object.entries(otherProperties).filter((item) => !NR_DECORATION_PROPERTIES.includes(item[0]))
+                    Object.entries(otherProperties).filter((item) => !settings.decorationProperties.includes(item[0]))
                 )
 
                 structuredLog = {
