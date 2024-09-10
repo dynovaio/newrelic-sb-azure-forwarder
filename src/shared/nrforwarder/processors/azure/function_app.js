@@ -34,7 +34,7 @@ const getLogLevel = (levelId) => {
 /**
  * Process logs for Azure Function App
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -101,7 +101,7 @@ function logProcessor(log, context, settings) {
             }
 
             if (properties.levelId !== undefined) {
-                structuredLog.level = getLogLevel(properties.levelId)
+                structuredLog.level = getLogLevel(parseInt(properties.levelId))
             }
 
             if (properties.appName !== undefined) {
