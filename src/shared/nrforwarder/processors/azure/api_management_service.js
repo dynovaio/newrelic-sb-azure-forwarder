@@ -9,7 +9,7 @@ const LogKind = {
 /**
  * Process logs for Azure API Management Service
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -102,8 +102,8 @@ function logProcessor (log, context, settings) {
 /**
  * Extract tracing informacion from logs for Azure API Management Service
  */
-function tracingExtractor (buffer, context, settings) {
-    function getHttpUrl (log) {
+function tracingExtractor(buffer, context, settings) {
+    function getHttpUrl(log) {
         const scheme = log[`${settings.customPropertiesPrefix}`].request.url.scheme
         const host = log[`${settings.customPropertiesPrefix}`].request.url.host
         const path = log[`${settings.customPropertiesPrefix}`].request.url.path
@@ -143,13 +143,16 @@ function tracingExtractor (buffer, context, settings) {
 
                     if (span.attributes['http.statusCode'] >= 400) {
                         span.attributes['error'] = true
-                        span.attributes['error.message'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
-                        span.attributes['error.class'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
+                        span.attributes['error.message'] =
+                            log[`${settings.customPropertiesPrefix}`].response.status.reason
+                        span.attributes['error.class'] =
+                            log[`${settings.customPropertiesPrefix}`].response.status.reason
                     }
                 }
 
                 if (log[`${settings.customPropertiesPrefix}`].response?.status?.reason !== undefined) {
-                    span.attributes['http.statusText'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
+                    span.attributes['http.statusText'] =
+                        log[`${settings.customPropertiesPrefix}`].response.status.reason
                 }
 
                 if (
