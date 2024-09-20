@@ -9,7 +9,7 @@ const LogKind = {
 /**
  * Process logs for Azure API Management Service
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     const { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -102,30 +102,30 @@ function logProcessor(log, context, settings) {
 /**
  * Extract tracing informacion from logs for Azure API Management Service
  */
-function tracingExtractor(buffer, context) {
-    function getHttpUrl(log) {
-        const scheme = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.scheme
-        const host = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.host
-        const path = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.url.path
+function tracingExtractor (buffer, context, settings) {
+    function getHttpUrl (log) {
+        const scheme = log[`${settings.customPropertiesPrefix}`].request.url.scheme
+        const host = log[`${settings.customPropertiesPrefix}`].request.url.host
+        const path = log[`${settings.customPropertiesPrefix}`].request.url.path
 
         return `${scheme}://${host}${path}`
     }
 
     let spans = buffer
         .map((log) => {
-            const kind = log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].kind
+            const kind = log[`${settings.customPropertiesPrefix}.meta`].kind
 
             if (kind === LogKind.response || kind === LogKind.error) {
                 let span = {
                     'trace.id': log['trace.id'],
                     id: log['span.id'],
-                    timestamp: log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].time,
+                    timestamp: log[`${settings.customPropertiesPrefix}.meta`].time,
                     attributes: {
-                        'duration.ms': log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].timespan,
-                        duration: log[`${NR_CUSTOM_PROPERTIES_PREFIX}.meta`].timespan / 1000,
-                        name: log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.originalUrl.path,
-                        host: log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.originalUrl.host,
-                        'http.method': log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].request.method,
+                        'duration.ms': log[`${settings.customPropertiesPrefix}.meta`].timespan,
+                        duration: log[`${settings.customPropertiesPrefix}.meta`].timespan / 1000,
+                        name: log[`${settings.customPropertiesPrefix}`].request.originalUrl.path,
+                        host: log[`${settings.customPropertiesPrefix}`].request.originalUrl.host,
+                        'http.method': log[`${settings.customPropertiesPrefix}`].request.method,
                         'http.url': getHttpUrl(log)
                     }
                 }
@@ -138,29 +138,29 @@ function tracingExtractor(buffer, context) {
                     span.attributes['service.name'] = log.serviceName
                 }
 
-                if (log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response?.status?.code !== undefined) {
-                    span.attributes['http.statusCode'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.code
+                if (log[`${settings.customPropertiesPrefix}`].response?.status?.code !== undefined) {
+                    span.attributes['http.statusCode'] = log[`${settings.customPropertiesPrefix}`].response.status.code
 
                     if (span.attributes['http.statusCode'] >= 400) {
                         span.attributes['error'] = true
-                        span.attributes['error.message'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason
-                        span.attributes['error.class'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason
+                        span.attributes['error.message'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
+                        span.attributes['error.class'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
                     }
                 }
 
-                if (log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response?.status?.reason !== undefined) {
-                    span.attributes['http.statusText'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].response.status.reason
+                if (log[`${settings.customPropertiesPrefix}`].response?.status?.reason !== undefined) {
+                    span.attributes['http.statusText'] = log[`${settings.customPropertiesPrefix}`].response.status.reason
                 }
 
                 if (
-                    typeof log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error === 'object' &&
-                    log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error !== null
+                    typeof log[`${settings.customPropertiesPrefix}`].error === 'object' &&
+                    log[`${settings.customPropertiesPrefix}`].error !== null
                 ) {
                     span.attributes['error'] = true
-                    span.attributes['error.message'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.message
-                    span.attributes['error.class'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.reason
-                    span.attributes['error.source'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.source
-                    span.attributes['error.section'] = log[`${NR_CUSTOM_PROPERTIES_PREFIX}`].error.section
+                    span.attributes['error.message'] = log[`${settings.customPropertiesPrefix}`].error.message
+                    span.attributes['error.class'] = log[`${settings.customPropertiesPrefix}`].error.reason
+                    span.attributes['error.source'] = log[`${settings.customPropertiesPrefix}`].error.source
+                    span.attributes['error.section'] = log[`${settings.customPropertiesPrefix}`].error.section
                 }
 
                 return span
