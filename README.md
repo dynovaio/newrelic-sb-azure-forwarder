@@ -68,6 +68,7 @@ To use this project, you will need to follow these steps:
     resource_group_name="my-resource-group"
     function_app_runtime_version="20"
     new_relic_license_key="YOUR_NEW_RELIC_LICENSE_KEY"
+    source_service_type="my_source_service_type"
 
     ./scripts/create_resourcegroup.sh \
         $resource_group_name \
@@ -85,6 +86,7 @@ To use this project, you will need to follow these steps:
     ./scripts/configure_functionapp.sh \
         $function_app_name \
         $resource_group_name \
+        $source_service_type \
         $new_relic_license_key
 
     ./scripts/publish_functionapp.sh \
@@ -97,12 +99,12 @@ To use this project, you will need to follow these steps:
 
     ```bash
     # Modify the values of the variables according to your requirements
-    $resource_id = "my-resource-id"
-    $resource_group_name = "my-resource-group"
-    $log_configuration = "my-log-configuration"
-    $metrics_configuration = "my-metrics-configuration"
+    resource_id = "my-resource-id"
+    resource_group_name = "my-resource-group"
+    log_configuration = "my-log-configuration"
+    metrics_configuration = "my-metrics-configuration"
 
-    ./scripts/stream_logs_to_event_hub.sh \
+    ./scripts/stream_logs_to_eventhub.sh \
         $resource_id \
         $resource_group_name \
         $log_configuration \

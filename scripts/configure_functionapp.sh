@@ -14,16 +14,19 @@
 # Usage:
 # ./configure_function.sh \
 #     $resource_group_name \
+#     $source_service_type \
 #     $new_relic_license_key
 #
 # Parameters:
 # * $resource_group_name   : Name of the resource group.
+# * $source_service_type   : Source service type.
 # * $new_relic_license_key : New Relic license key.
 #
 # Example:
 # ./configure_function.sh \
-#     1234567890abcdef \
-#     myResourceGroup
+#     myResourceGroup \
+#     @azure/AzureFunctionApp \
+#     1234567890abcdef
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -46,12 +49,20 @@ else
     RESOURCE_GROUP_NAME="$1"
 fi
 
-# Check if resource group name is provided
+# Check if source service type is provided
 if [ -z "$2" ]; then
     echo "[ERR] New Relic license key is not provided."
     exit 1
 else
-    NEW_RELIC_LICENSE_KEY="$2"
+    SOURCE_SERVICE_TYPE="$2"
+fi
+
+# Check if new relic license name is provided
+if [ -z "$3" ]; then
+    echo "[ERR] New Relic license key is not provided."
+    exit 1
+else
+    NEW_RELIC_LICENSE_KEY="$3"
 fi
 
 # -----------------------------------------------------------------------------
@@ -92,7 +103,7 @@ az functionapp config appsettings set \
         "NR_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}" \
         "NR_TRIGGER_CONNECTION_STRING=${EVENT_HUB_CONNECTION_STRING}" \
         "NR_CUSTOM_PROPERTIES_PREFIX=sb" \
-        "NR_SOURCE_SERVICE_TYPE=@azure/APIManagementService" \
+        "NR_SOURCE_SERVICE_TYPE=${SOURCE_SERVICE_TYPE}" \
         "NR_ENVIRONMENT=dev" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
