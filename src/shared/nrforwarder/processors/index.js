@@ -7,5 +7,5 @@ module.exports = {
     '@azure/APIManagementService': azAPIManagementService,
     '@azure/FunctionApp': azFunctionApp,
     '@azure/DataFactory': azDataFactory,
-    '@azure/ContainerApps': azContainerApps,
+    '@azure/ContainerApps': azContainerApps
 }
