@@ -3,10 +3,18 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function processLog(log, context, settings) {
+function processLog (log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
+        if (typeof properties === 'string') {
+            try {
+                properties = JSON.parse(properties.replace(/'/g, '"'))
+            } catch (error) {
+                context.warn('Can not parse properties to JSON')
+            }
+        }
+
         if (typeof properties === 'object' && properties !== null) {
             let structuredLog = {}
 
@@ -37,6 +45,17 @@ function processLog(log, context, settings) {
                     ...properties,
                     ...otherProperties,
                     message
+                }
+            } else if (typeof properties.message === 'string' && properties.message !== '') {
+                let { message, ...otherProperties } = properties
+
+                structuredLog = {
+                    ...structuredLog,
+                    message
+                }
+
+                properties = {
+                    ...otherProperties
                 }
             }
 
