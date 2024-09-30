@@ -3,7 +3,7 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function processLog (log, context, settings) {
+function processLog(log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
