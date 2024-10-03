@@ -3,7 +3,7 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     console.log('log', log)
 
     let { properties, ...meta } = log
@@ -39,6 +39,13 @@ function logProcessor(log, context, settings) {
                     ...properties,
                     ...otherProperties,
                     message
+                }
+            }
+
+            if (typeof properties.Log === 'string' && properties.Log !== '') {
+                structuredLog = {
+                    ...structuredLog,
+                    message: properties.Log
                 }
             }
 
