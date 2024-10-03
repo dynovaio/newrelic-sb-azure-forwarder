@@ -38,7 +38,7 @@ const getLogLevel = (level) => {
 /**
  * Process logs for Azure Data Factory
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -72,7 +72,10 @@ function logProcessor (log, context, settings) {
                 structuredLog.level = getLogLevel(meta.level)
             }
 
-            if (meta.category !== undefined && (meta.category === Category.PIPELINE_RUNS || meta.category === Category.ACTIVITY_RUNS)) {
+            if (
+                meta.category !== undefined &&
+                (meta.category === Category.PIPELINE_RUNS || meta.category === Category.ACTIVITY_RUNS)
+            ) {
                 structuredLog['trace.id'] = meta.correlationId.replace(/-/g, '')
 
                 if (meta.category === Category.PIPELINE_RUNS) {
@@ -95,16 +98,16 @@ function logProcessor (log, context, settings) {
 /**
  * Extract tracing informacion from logs for Azure Data Factory
  */
-function tracingExtractor (buffer, context, settings) {
+function tracingExtractor(buffer, context, settings) {
     let spans = buffer
         .map((log) => {
             let status = log[`${settings.customPropertiesPrefix}.meta`].status
-            context.warn("*** *** ***")
+            context.warn('*** *** ***')
             context.warn(status)
             context.warn(status === Status.FAILED || status === Status.SUCCEEDED || status === Status.CANCELLED)
 
             if (status === Status.FAILED || status === Status.SUCCEEDED || status === Status.CANCELLED) {
-                context.warn("processing span ...")
+                context.warn('processing span ...')
 
                 let category = log[`${settings.customPropertiesPrefix}.meta`].category
 
@@ -130,7 +133,7 @@ function tracingExtractor (buffer, context, settings) {
 
                 let error = log[`${settings.customPropertiesPrefix}`].Error
 
-                if (error !== undefined && error.message !== undefined && error.message !== "") {
+                if (error !== undefined && error.message !== undefined && error.message !== '') {
                     span.attributes['error'] = true
                     span.attributes['error.message'] = error.message
                     span.attributes['error.class'] = error.failureType
@@ -146,12 +149,12 @@ function tracingExtractor (buffer, context, settings) {
                     span.attributes['service.name'] = log.serviceName
                 }
 
-                context.warn(`Stringified Log: ${JSON.stringify([{ "span": span }])}`)
-                context.warn("*** *** ***")
+                context.warn(`Stringified Log: ${JSON.stringify([{ span: span }])}`)
+                context.warn('*** *** ***')
 
                 return span
             }
-            context.warn("*** *** ***")
+            context.warn('*** *** ***')
 
             return null
         })
