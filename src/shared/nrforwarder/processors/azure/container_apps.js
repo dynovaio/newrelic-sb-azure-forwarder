@@ -3,7 +3,7 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     console.log('log', log)
 
     let { properties, ...meta } = log
@@ -18,6 +18,20 @@ function logProcessor(log, context, settings) {
                 context.warn('Can not parse properties.Log to JSON')
             }
 
+            let { Log, ...otherProperties } = properties.Log
+            delete properties.Log
+
+            structuredLog = {
+                ...structuredLog,
+                [`${settings.customPropertiesPrefix}`]: {
+                    ...otherProperties,
+                    ...properties
+                },
+                [`${settings.customPropertiesPrefix}.meta`]: meta,
+                message: "Message::" + JSON.stringify(Log)
+            }
+
+            /*
             if (typeof properties.Log === 'object' && properties.Log !== null) {
                 let { message, ...otherProperties } = properties.Log
                 delete properties.Log
@@ -80,6 +94,7 @@ function logProcessor(log, context, settings) {
             if (properties.appName !== undefined) {
                 structuredLog.serviceName = properties.appName
             }
+            */
 
             return structuredLog
         }
