@@ -3,7 +3,7 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function logProcessor (log, context, settings) {
+function logProcessor(log, context, settings) {
     console.log('log', log)
 
     let { properties, ...meta } = log
@@ -30,7 +30,9 @@ function logProcessor (log, context, settings) {
                 )
 
                 otherLogProperties = Object.fromEntries(
-                    Object.entries(otherLogProperties).filter((item) => !settings.decorationProperties.includes(item[0]))
+                    Object.entries(otherLogProperties).filter(
+                        (item) => !settings.decorationProperties.includes(item[0])
+                    )
                 )
 
                 Log = {
