@@ -4,8 +4,6 @@ const allowsTracing = false
  * Process logs for Azure Container Apps
  */
 function logProcessor(log, context, settings) {
-    console.log('log', log)
-
     let { properties, ...meta } = log
 
     if (properties !== undefined) {
@@ -22,7 +20,7 @@ function logProcessor(log, context, settings) {
                 }
             }
 
-            if (typeof Log === 'object' || Log !== null) {
+            if (typeof Log === 'object' && Log !== null) {
                 let { message, ...otherLogProperties } = Log
 
                 let newrelicDecorationProperties = Object.fromEntries(
