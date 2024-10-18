@@ -3,7 +3,7 @@ const allowsTracing = false
 /**
  * Process logs for Azure Container Apps
  */
-function logProcessor(log, context, settings) {
+function logProcessor (log, context, settings) {
     console.log('log', log)
 
     let { properties, ...meta } = log
@@ -13,87 +13,44 @@ function logProcessor(log, context, settings) {
             let structuredLog = {}
 
             let { Log, ...otherProperties } = properties
-            delete properties.Log
 
-            try {
-                Log = JSON.parse(Log)
-            } catch (error) {
-                context.warn('Can not parse Log to JSON')
+            if (typeof Log === 'string') {
+                try {
+                    Log = JSON.parse(Log)
+                } catch (error) {
+                    context.warn('Can not parse Log to JSON')
+                }
             }
 
-            let message = ''
-
-            try {
-                message = 'Message::' + JSON.stringify(Log)
-            } catch (error) {
-                context.warn('Can not stringify Log to JSON')
-                message = 'Message::' + Log
-            }
-
-            structuredLog = {
-                ...structuredLog,
-                [`${settings.customPropertiesPrefix}`]: {
-                    ...otherProperties,
-                    ...properties
-                },
-                [`${settings.customPropertiesPrefix}.meta`]: meta,
-                message: 'Message::' + JSON.stringify(Log)
-            }
-
-            /*
-            if (typeof properties.Log === 'object' && properties.Log !== null) {
-                let { message, ...otherProperties } = properties.Log
-                delete properties.Log
+            if (typeof Log === 'object' || Log !== null) {
+                let { message, ...otherLogProperties } = Log
 
                 let newrelicDecorationProperties = Object.fromEntries(
-                    Object.entries(otherProperties).filter((item) => settings.decorationProperties.includes(item[0]))
+                    Object.entries(otherLogProperties).filter((item) => settings.decorationProperties.includes(item[0]))
                 )
 
-                otherProperties = Object.fromEntries(
-                    Object.entries(otherProperties).filter((item) => !settings.decorationProperties.includes(item[0]))
+                otherLogProperties = Object.fromEntries(
+                    Object.entries(otherLogProperties).filter((item) => !settings.decorationProperties.includes(item[0]))
                 )
+
+                Log = {
+                    message,
+                    ...otherLogProperties
+                }
+
+                Log = JSON.stringify(Log)
 
                 structuredLog = {
                     ...structuredLog,
                     ...newrelicDecorationProperties
                 }
-
-                properties = {
-                    ...properties,
-                    ...otherProperties,
-                    message
-                }
-            }
-
-            if (typeof properties.Log === 'string' && properties.Log !== '') {
-                structuredLog = {
-                    ...structuredLog,
-                    message: properties.Log
-                }
-            }
-
-            let { message, ...otherProperties } = properties
-
-            if (typeof message === 'string' && message !== '') {
-                structuredLog = {
-                    ...structuredLog,
-                    message
-                }
-
-                properties = otherProperties
-            } else if (typeof message === 'object' && message !== null) {
-                structuredLog = {
-                    ...structuredLog,
-                    message: 'Message::' + JSON.stringify(message)
-                }
-
-                properties = otherProperties
             }
 
             structuredLog = {
                 ...structuredLog,
-                [`${settings.customPropertiesPrefix}`]: properties,
-                [`${settings.customPropertiesPrefix}.meta`]: meta
+                [`${settings.customPropertiesPrefix}`]: otherProperties,
+                [`${settings.customPropertiesPrefix}.meta`]: meta,
+                message: `Message::${Log}`
             }
 
             if (meta.time !== undefined) {
@@ -103,7 +60,6 @@ function logProcessor(log, context, settings) {
             if (properties.appName !== undefined) {
                 structuredLog.serviceName = properties.appName
             }
-            */
 
             return structuredLog
         }
